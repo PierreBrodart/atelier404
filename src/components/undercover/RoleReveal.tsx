@@ -36,7 +36,7 @@ export function RoleReveal({ view, act }: ScreenProps) {
       </div>
 
       <div className="uc-actions" data-enter>
-        <Toggle label="Afficher mon rôle" checked={revealed} onChange={setRevealed} states={['Caché', 'Visible']} />
+        <Toggle label="Afficher mon mot" checked={revealed} onChange={setRevealed} states={['Caché', 'Visible']} />
         <Button onClick={() => act({ type: 'ready' })} disabled={ready}>
           {ready ? 'C’est noté, on attend les autres' : 'J’ai compris, je suis prêt'}
         </Button>

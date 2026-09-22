@@ -8,6 +8,10 @@ deploy
 *.tar.gz
 *.zip
 
+# Données du module Kahoot : fournies par un volume monté à l'exécution (voir docker-compose.yml),
+# jamais embarquées dans l'image.
+data
+
 .git
 .github
 

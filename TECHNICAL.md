@@ -1,6 +1,6 @@
 # Atelier 404 — documentation technique
 
-Site vitrine d'une agence web fictive + un mini-jeu multijoueur (Undercover).
+Site vitrine d'une agence web fictive + un mini-jeu multijoueur (Undercover) + un module de quiz (Kahoot).
 Stack : **Next.js 16 (App Router)**, React 19.2, TypeScript, SCSS, GSAP + ScrollTrigger, Three.js / React Three Fiber.
 
 > ⚠️ Next 16 diffère des versions précédentes : en cas de doute, lire `node_modules/next/dist/docs/` (voir `AGENTS.md`).
@@ -20,6 +20,7 @@ Stack : **Next.js 16 (App Router)**, React 19.2, TypeScript, SCSS, GSAP + Scroll
 10. [Commandes et tests](#10-commandes-et-tests)
 11. [Déploiement (VPS, mise à jour)](#11-déploiement-vps-mise-à-jour)
 12. [Docker / Dokploy](#12-docker--dokploy)
+13. [Kahoot (quiz manuel)](#13-kahoot-quiz-manuel)
 
 ---
 
@@ -32,8 +33,9 @@ Stack : **Next.js 16 (App Router)**, React 19.2, TypeScript, SCSS, GSAP + Scroll
 
 Approche **Jamstack** : le site est du HTML/CSS/JS pré-rendu, servi tel quel (CDN possible), sans base de données,
 sans CMS. Le contenu vit dans des fichiers TypeScript (`src/data/`). Le formulaire de contact est prêt pour un service
-tiers (`NEXT_PUBLIC_FORM_ENDPOINT`). **Seule exception assumée : le jeu Undercover**, qui a besoin d'un état serveur
-partagé (voir §9) — c'est la seule partie dynamique du projet.
+tiers (`NEXT_PUBLIC_FORM_ENDPOINT`). **Deux exceptions assumées** : le jeu Undercover, qui a besoin d'un état serveur
+partagé (voir §9), et le module Kahoot, qui persiste des quiz créés à la main dans des fichiers JSON (voir §13) —
+les seules parties dynamiques du projet.
 
 ## 2. Génération statique
 
@@ -41,7 +43,9 @@ partagé (voir §9) — c'est la seule partie dynamique du projet.
   `generateStaticParams()` (`src/app/projets/[slug]/page.tsx`) à partir de `src/data/projects.ts`, avec
   `dynamicParams = false` (un slug inconnu renvoie une 404).
 - Les métadonnées de chaque projet sont produites par `generateMetadata()` depuis les mêmes données.
-- Dynamiques (`ƒ`) : `/api/undercover`, `/api/undercover/stream` et `/undercover/[code]` (une room = une URL éphémère).
+- Dynamiques (`ƒ`) : `/api/undercover`, `/api/undercover/stream` et `/undercover/[code]` (une room = une URL éphémère),
+  ainsi que `/api/kahoot*`, `/kahoot`, `/kahoot/jouer/[id]` et l'éditeur secret (§13) — ces pages lisent des fichiers
+  JSON à chaque requête (`dynamic = 'force-dynamic'`), donc jamais mises en cache statiquement.
 
 ## 3. Organisation des données
 
@@ -358,4 +362,131 @@ docker build -t atelier404 --build-arg NEXT_PUBLIC_SITE_URL=https://mondomaine.f
 docker run -p 3000:3000 atelier404
 # ou :
 NEXT_PUBLIC_SITE_URL=https://mondomaine.fr docker compose up --build
+```
+
+## 13. Kahoot (quiz manuel)
+
+Accès public : `/kahoot` (liste « Mes Kahoot » + onglet « Actualités »), `/kahoot/jouer/[id]` (jouer). Lien dans le
+pied de page, juste sous Undercover. **Cette étape ne couvre que la création manuelle** — l'onglet « Actualités »
+(génération automatique depuis l'actu via NewsAPI + Claude) est une vitrine « Bientôt disponible », volontairement
+non implémentée : l'architecture (type `KahootKind = 'manual' | 'auto'`, dossier `data/kahoot/`) est prête à
+accueillir un second dossier `data/kahoot/auto/` et sa propre route de génération sans toucher au module manuel.
+
+### Où sont les données
+
+Aucune base de données : un fichier JSON par Kahoot, écrit par `src/lib/kahoot/store.ts`.
+
+```text
+data/kahoot/manual/<id>.json     un Kahoot = un fichier (id = randomUUID())
+```
+
+Écriture atomique (fichier temporaire + `rename`, atomique côté OS) : jamais de fichier à moitié écrit si le
+process s'arrête pendant une sauvegarde. Le dossier doit être un **volume monté** en production
+(`docker-compose.yml` → `kahoot_data:/app/data`) : sans ce volume, les quiz créés après le déploiement disparaissent
+au redéploiement suivant (le conteneur repart d'une image neuve). En local (`npm run dev`), le dossier est créé tout
+seul au premier enregistrement.
+
+### Organisation
+
+```text
+src/lib/kahoot/
+  types.ts       Kahoot, Question (QCM / curseur / carte), résumés de liste
+  rules.ts       limites (titre, nombre de questions, temps max 60 s, points…)
+  validate.ts    validation stricte des requêtes entrantes (même logique que undercover/parse.ts)
+  scoring.ts     fonctions pures de score (QCM, curseur, distance carte — voir « Score » plus bas)
+  store.ts       lecture/écriture des fichiers JSON, écriture atomique
+  editorSlug.ts  segment secret de l'éditeur + vérification de la clé (voir plus bas)
+  client.ts      appels fetch côté navigateur vers /api/kahoot*
+src/app/api/kahoot/
+  route.ts               GET (liste) / POST (création, protégée)
+  [id]/route.ts           GET (un quiz) / PUT (modification, protégée) / DELETE (protégée)
+  [id]/duplicate/route.ts POST (duplication, protégée)
+src/app/kahoot/
+  page.tsx                 page publique (onglets)
+  jouer/[id]/page.tsx       jouer (public)
+  [secret]/page.tsx         tableau de bord (Modifier / Dupliquer / Supprimer) — voir plus bas
+  [secret]/nouveau/page.tsx éditeur, création
+  [secret]/[id]/page.tsx    éditeur, modification
+src/components/kahoot/     cartes, onglets publics, éditeur (question par question, drag & drop),
+                            lecteur de partie (timer, correction, score), carte Leaflet
+src/styles/kahoot/         styles du module (chargés uniquement sous /kahoot)
+```
+
+### L'éditeur : une URL secrète, pas un compte
+
+Pas de compte, pas d'authentification : l'énoncé est explicite là-dessus. La création/modification/suppression vit
+derrière un segment d'URL non deviné plutôt qu'un vrai système d'auth (`/kahoot/<secret>`), lu via la variable
+d'environnement **`KAHOOT_EDITOR_SLUG`** (sans préfixe `NEXT_PUBLIC_`, volontairement : une variable préfixée
+`NEXT_PUBLIC_` finit dans le bundle JavaScript envoyé au navigateur — donc lisible par n'importe qui via les
+DevTools —, ce qui viderait la « confidentialité » de son sens). Le dépôt étant public sur GitHub, ne comptez pas sur
+la valeur par défaut du code (`atelier-prive-9f3k2q`, utile seulement en développement local) : **définissez une
+vraie valeur dans l'environnement de production** (`docker-compose.yml` / interface Dokploy), qu'il ne faut jamais
+committer, exactement comme un mot de passe.
+
+Les routes de mutation de l'API (`POST`/`PUT`/`DELETE` sous `/api/kahoot`) vérifient la même clé, envoyée par le
+client dans l'en-tête `x-kahoot-key`, en temps constant (`timingSafeEqual`, même logique que les jetons
+d'Undercover) : sans elle, `GET /api/kahoot` (lecture) reste public — nécessaire pour que la page `/kahoot` et le
+mode « Jouer » fonctionnent sans configuration — mais aucune écriture n'est possible sans connaître le secret. Ce
+n'est pas un « faux » système de sécurité complexe : c'est littéralement une comparaison de chaîne, appliquée aux
+deux endroits (page et API) qui en ont besoin.
+
+La page de l'éditeur porte `robots: { index: false, follow: false }` et n'apparaît ni dans `sitemap.ts`, ni dans le
+pied de page, ni dans la page publique `/kahoot` — mais volontairement **pas** dans `robots.txt` non plus (un
+`Disallow` y afficherait l'adresse en clair à quiconque le lit).
+
+### Éditeur : types de question
+
+Trois types (`src/lib/kahoot/types.ts`), un quatrième volontairement absent :
+
+| Type | Description | Remarque |
+| --- | --- | --- |
+| `multiple_choice` | QCM, 2 à 6 propositions, une ou plusieurs bonnes réponses | |
+| `slider` | curseur numérique (min/max/pas/valeur correcte/unité) | |
+| `map_pin` | carte interactive (Leaflet + tuiles OpenStreetMap), latitude/longitude, précision et zone acceptable en km | |
+| *« placement »* | — | non implémenté : l'énoncé demande explicitement d'éviter un doublon avec le curseur si l'interaction n'est pas réellement différente — c'est le cas ici, `slider` couvre déjà « placer un curseur sur une échelle » |
+
+Chaque question partage : texte, temps limite (5 à 60 s), points, explication, source (nom + URL), image (URL
+externe uniquement — pas d'upload, comme demandé). Tout est revalidé côté serveur (`validate.ts`) : longueurs,
+bornes numériques, cohérence min/max/valeur correcte, latitude/longitude dans les plages valides, URL strictement
+`http(s):` (jamais `javascript:`/`data:`, puisque ces URLs sont réinjectées telles quelles dans `src`/`href`).
+
+Réordonnancement des questions : glisser-déposer natif (`draggable`, aucune bibliothèque) **plus** des boutons
+« Monter »/« Descendre » pour le clavier et les lecteurs d'écran — le drag & drop seul n'est pas accessible.
+
+### Carte interactive
+
+Seule vraie lacune du projet existant pour ce module : aucune solution de carte n'était en place. Choix ajouté :
+**Leaflet** (léger, sans dépendance à un compte/clé API) + tuiles OpenStreetMap, plutôt qu'une carte du monde
+dessinée à la main (imprécise pour calculer une distance) ou une bibliothèque plus lourde (Mapbox GL). Les marqueurs
+sont redessinés en CSS (pastille encre + couleur d'accent, voir `.kh-map-pin` dans `styles/kahoot/main.scss`) plutôt
+que l'icône Leaflet par défaut, pour rester dans le langage visuel du site malgré des tuiles forcément
+« réalistes ». `MapPicker` n'est jamais importé statiquement : toujours via `next/dynamic({ ssr: false })`, Leaflet
+ayant besoin de `window`/`document`.
+
+### Score
+
+`src/lib/kahoot/scoring.ts` : fonctions **pures** (aucun accès réseau ni DOM), pensées pour être rejouées côté
+serveur si le mode multijoueur (préparé, pas implémenté) doit un jour valider les réponses sans faire confiance au
+client. Principe commun : `points × précision × rapidité`, où la rapidité ne fait jamais perdre plus de la moitié
+des points (facteur entre 0,5 et 1 selon le temps restant).
+
+- **QCM** : toutes les bonnes réponses cochées, aucune de trop → 100 % de précision, sinon 0.
+- **Curseur** : précision continue selon la distance à la valeur correcte, ramenée à l'étendue min/max (pas de
+  seuil brutal — un curseur presque juste rapporte presque tous les points).
+- **Carte** : distance orthodromique (`haversineKm`, formule de Haversine) entre le point posé et la bonne réponse ;
+  précision continue jusqu'au rayon `precisionKm` (score plein), score nul au-delà de `toleranceKm` si défini.
+
+### Mode local, préparation du multijoueur
+
+Pas d'adversaire réseau pour l'instant (`PlayRunner`, entièrement côté client) : le Kahoot complet — bonnes réponses
+comprises — est envoyé au navigateur qui joue, comme le vrai Kahoot le fait aussi une fois la question affichée.
+Rien n'empêche d'ajouter plus tard un mode « room » : le score (`scoring.ts`), le modèle de données (`Kahoot`,
+`Question`) et le stockage (`store.ts`) ne changeraient pas ; il faudrait ajouter un état de partie en mémoire et un
+flux temps réel, sur le modèle exact d'Undercover (§9) — SSE, pas de nouvelle dépendance.
+
+### Robustesse
+
+Identifiants de fichier validés par une regex stricte avant toute construction de chemin (`isValidKahootId`) : un id
+malformé ne peut jamais sortir de `data/kahoot/manual/`. Requêtes limitées à 200 Ko. Un fichier JSON corrompu ou
+illisible est ignoré par `listKahoots()` plutôt que de faire planter la liste.
 ```

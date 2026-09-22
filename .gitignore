@@ -8,3 +8,7 @@ next-env.d.ts
 deploy/
 *.tar.gz
 *.zip
+
+# Données du module Kahoot (un fichier JSON par quiz, voir TECHNICAL.md) : jamais versionnées,
+# doivent vivre dans un volume monté en production. Le dossier lui-même reste suivi (.gitkeep).
+data/kahoot/manual/*.json

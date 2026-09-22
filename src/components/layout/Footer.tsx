@@ -70,6 +70,15 @@ export function Footer() {
                   <span className="sr-only"> (mini-jeu multijoueur)</span>
                 </TLink>
               </li>
+              <li>
+                <TLink href="/kahoot" className="footer__game">
+                  Kahoot
+                  <span className="footer__game-tag" aria-hidden="true">
+                    Quiz
+                  </span>
+                  <span className="sr-only"> (quiz)</span>
+                </TLink>
+              </li>
             </ul>
           </div>
         </div>

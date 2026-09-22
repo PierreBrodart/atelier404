@@ -25,8 +25,20 @@ services:
     environment:
       PORT: '3000'
       HOSTNAME: '0.0.0.0'
+      # Segment secret de l'éditeur Kahoot (/kahoot/<ce-segment>) : variable d'exécution, pas
+      # un build arg NEXT_PUBLIC_ (elle ne doit jamais atterrir dans le JS envoyé au
+      # navigateur). Définissez une vraie valeur dans l'environnement de Dokploy — jamais
+      # commitée. Voir TECHNICAL.md §13.
+      KAHOOT_EDITOR_SLUG: ${KAHOOT_EDITOR_SLUG:-atelier-prive-9f3k2q}
+    volumes:
+      # Un fichier JSON par Kahoot (voir TECHNICAL.md §13) : sans ce volume, tout est perdu au
+      # prochain redéploiement.
+      - kahoot_data:/app/data
     deploy:
       replicas: 1
       resources:
         limits:
           memory: 512M
+
+volumes:
+  kahoot_data:

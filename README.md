@@ -1,6 +1,6 @@
 # Atelier 404
 
-Site vitrine d'une agence web créative (fictive) + [Undercover](#undercover), un mini-jeu de bluff multijoueur en temps réel, le tout dans une seule app Next.js.
+Site vitrine d'une agence web créative (fictive) + [Undercover](#undercover), un mini-jeu de bluff multijoueur en temps réel, + [Kahoot](#kahoot), un module de quiz maison, le tout dans une seule app Next.js.
 
 Documentation complète (architecture, données, animations, 3D, accessibilité, le jeu en détail) : **[TECHNICAL.md](./TECHNICAL.md)**.
 
@@ -47,6 +47,13 @@ Détails, variables d'environnement (build vs runtime), et **pourquoi un seul r�
 
 Un mot secret, un imposteur, un vote. Jusqu'à 10 joueurs, chacun sur son téléphone.
 Accessible depuis le site sur `/undercover`. Détails techniques (moteur de jeu, confidentialité, temps réel via SSE) : [TECHNICAL.md §9](./TECHNICAL.md#9-undercover-mini-jeu-multijoueur).
+
+## Kahoot
+
+Des quiz maison : QCM, curseurs de précision, cartes interactives à pointer du doigt. Accessible sur `/kahoot`
+(jouer) ; la création/modification vit derrière une URL secrète (`KAHOOT_EDITOR_SLUG`, à définir en production —
+voir [TECHNICAL.md §13](./TECHNICAL.md#13-kahoot-quiz-manuel)), pas de compte. Données persistées en JSON
+(`data/kahoot/`, à monter en volume en production).
 
 ## Commandes utiles
 
