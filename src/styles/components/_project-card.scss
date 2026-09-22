@@ -1,0 +1,76 @@
+@use '../abstracts' as *;
+
+.project-card {
+  &__link {
+    display: block;
+  }
+
+  &__frame {
+    position: relative;
+    background: var(--card-bg);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 8px 8px 0 var(--ink);
+    overflow: hidden;
+    transition: transform 0.6s var(--ease-out), box-shadow 0.6s var(--ease-out);
+  }
+
+  &__link:hover &__frame,
+  &__link:focus-visible &__frame {
+    transform: translate(-5px, -5px) rotate(-0.8deg);
+    box-shadow: 14px 14px 0 var(--card-bg), 14px 14px 0 2.5px var(--ink);
+  }
+
+  // Année posée comme une étiquette sur le coin de l'image
+  &__year {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 2;
+    padding: 0.25rem 0.75rem;
+    background: var(--card-bg);
+    color: var(--card-fg);
+    border: var(--border);
+    border-radius: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    rotate: -4deg;
+  }
+
+  &__body {
+    padding-top: 1.25rem;
+  }
+
+  &__meta {
+    @include mono-label;
+    margin-bottom: 0.5rem;
+  }
+
+  &__title {
+    @include display(clamp(2.3rem, 1rem + 4vw, 5.5rem));
+  }
+
+  // Surlignage façon marqueur qui prend la couleur du projet au survol / focus
+  &__mark {
+    padding: 0 0.12em;
+    margin-left: -0.12em;
+    border-radius: 0.15em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    transition: background-color 0.35s, color 0.35s;
+  }
+
+  &__link:hover &__mark,
+  &__link:focus-visible &__mark {
+    background: var(--card-bg);
+    color: var(--card-fg);
+  }
+
+  &__tagline {
+    margin-top: 0.75rem;
+    max-width: 34ch;
+    font-size: var(--fs-lead);
+    line-height: 1.3;
+  }
+}

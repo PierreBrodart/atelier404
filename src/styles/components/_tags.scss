@@ -1,0 +1,19 @@
+@use '../abstracts' as *;
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+}
+
+.tag {
+  padding: 0.2rem 0.8rem 0.25rem;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.4;
+}

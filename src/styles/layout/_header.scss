@@ -1,0 +1,159 @@
+@use '../abstracts' as *;
+
+.header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem var(--gutter);
+  pointer-events: none;
+
+  &__bar {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    width: 100%;
+    padding: 0.45rem 0.5rem 0.45rem 1.1rem;
+    background: var(--paper);
+    border: var(--border);
+    border-radius: 999px;
+    box-shadow: 4px 4px 0 var(--ink);
+    pointer-events: auto;
+
+    @include up(lg) {
+      width: auto;
+      min-width: 46rem;
+      padding-left: 1.4rem;
+      gap: 3rem;
+    }
+  }
+
+  &__nav {
+    display: none;
+
+    @include up(lg) {
+      display: block;
+    }
+  }
+
+  &__list {
+    display: flex;
+    gap: 0.25rem;
+    list-style: none;
+    padding: 0;
+  }
+
+  &__burger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 1rem 0.65rem 1.2rem;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    --focus: var(--sun);
+    --focus-halo: var(--ink);
+
+    @include up(lg) {
+      display: none;
+    }
+  }
+
+  &__burger-icon {
+    position: relative;
+    width: 1.1rem;
+    height: 0.75rem;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background: currentColor;
+      border-radius: 2px;
+      transition: transform 0.4s var(--ease-out), top 0.4s var(--ease-out);
+    }
+
+    &::before {
+      top: 0;
+    }
+
+    &::after {
+      top: calc(100% - 2.5px);
+    }
+  }
+
+  &__burger[aria-expanded='true'] &__burger-icon {
+    &::before {
+      top: calc(50% - 1.25px);
+      transform: rotate(45deg);
+    }
+
+    &::after {
+      top: calc(50% - 1.25px);
+      transform: rotate(-45deg);
+    }
+  }
+}
+
+// Logo : « Atelier » + pastille 404 qui se redresse au survol
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+
+  &__num {
+    display: inline-block;
+    padding: 0.2rem 0.45rem 0.25rem;
+    background: var(--tomato);
+    border: var(--border);
+    border-radius: 0.55rem;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    letter-spacing: 0;
+    rotate: -7deg;
+    transition: rotate 0.5s var(--ease-spring), scale 0.5s var(--ease-spring);
+  }
+
+  &:hover &__num,
+  &:focus-visible &__num {
+    rotate: 6deg;
+    scale: 1.12;
+  }
+}
+
+.nav-link {
+  position: relative;
+  display: inline-block;
+  padding: 0.6rem 1.05rem;
+  border: 2.5px solid transparent;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.98rem;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--link-accent);
+    color: var(--link-on);
+  }
+
+  // Page courante : pastille pleine de la couleur de la page
+  &[aria-current='page'] {
+    background: var(--link-accent);
+    color: var(--link-on);
+    border-color: var(--ink);
+  }
+}

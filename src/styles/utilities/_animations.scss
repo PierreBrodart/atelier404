@@ -1,0 +1,77 @@
+@use '../abstracts' as *;
+
+// États initiaux des révélations (animées ensuite par GSAP, voir lib/motion/reveal.ts).
+// Tout est conditionné à `html.motion-ok` : sans JS ou avec « réduire les animations »,
+// le contenu est simplement visible.
+.motion-ok {
+  [data-reveal='fade'],
+  [data-reveal='stagger'] > * {
+    opacity: 0;
+    transform: translateY(2.5rem);
+  }
+
+  [data-reveal='pop'] {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  [data-reveal='mask'] {
+    clip-path: inset(0 0 100% 0);
+  }
+
+  [data-reveal='words'] .split__inner {
+    transform: translateY(115%);
+  }
+
+  [data-reveal='scrub'] .split__inner {
+    opacity: 0.16;
+  }
+}
+
+// Filet de sécurité : si le JavaScript n'a pas pris le relais après 4 s, on affiche tout.
+@keyframes reveal-failsafe {
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+  }
+}
+
+html.motion-ok:not(.motion-ready) {
+  [data-reveal='fade'],
+  [data-reveal='pop'],
+  [data-reveal='mask'],
+  [data-reveal='stagger'] > *,
+  [data-reveal='words'] .split__inner,
+  [data-reveal='scrub'] .split__inner {
+    animation: reveal-failsafe 0.01s 4s forwards;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    rotate: var(--tilt, 0deg);
+  }
+  50% {
+    rotate: calc(var(--tilt, 0deg) + 4deg);
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}

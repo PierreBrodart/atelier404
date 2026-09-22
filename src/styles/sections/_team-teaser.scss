@@ -1,0 +1,55 @@
+@use '../abstracts' as *;
+
+.team-teaser {
+  @include sheet(var(--pink));
+  --em-bg: var(--paper);
+
+  &__grid {
+    display: grid;
+    gap: clamp(2.5rem, 6vw, 4rem);
+
+    @include up(lg) {
+      grid-template-columns: 5fr 7fr;
+      align-items: center;
+    }
+  }
+
+  &__intro {
+    display: grid;
+    gap: 1.75rem;
+    justify-items: start;
+  }
+
+  &__text {
+    max-width: 40ch;
+    font-size: var(--fs-lead);
+    line-height: 1.35;
+  }
+
+  &__cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+
+    @include up(md) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.75rem;
+    }
+
+    // Décalage vertical : rythme de photos accrochées à une corde à linge
+    > :nth-child(2) {
+      margin-top: 2.5rem;
+    }
+    > :nth-child(3) {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: 60%;
+
+      @include up(md) {
+        grid-column: auto;
+        width: auto;
+        margin-top: 0.75rem;
+      }
+    }
+  }
+}

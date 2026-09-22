@@ -1,0 +1,82 @@
+@use '../abstracts' as *;
+
+// Grand bandeau d'appel à l'action avant le pied de page
+.cta {
+  --cta-bg: var(--tomato);
+
+  @include sheet(var(--cta-bg));
+  overflow: clip;
+  color: var(--ink);
+
+  &--tomato {
+    --cta-bg: var(--tomato);
+  }
+  &--sun {
+    --cta-bg: var(--sun);
+  }
+  &--blue {
+    --cta-bg: var(--blue);
+    color: var(--paper);
+
+    // Décalage via top/right : transform/translate sont pilotés par GSAP (data-reveal="pop")
+    .cta__badge {
+      top: -6rem; // -1rem - 5rem
+      right: 3rem;
+    }
+  }
+  &--mint {
+    --cta-bg: var(--mint);
+  }
+  &--pink {
+    --cta-bg: var(--pink);
+  }
+
+  &__inner {
+    position: relative;
+    display: grid;
+    gap: 2.5rem;
+
+    @include up(lg) {
+      grid-template-columns: 8fr 4fr;
+      align-items: end;
+    }
+  }
+
+  &__title {
+    @include display(clamp(2.9rem, 1rem + 7.4vw, 10rem));
+  }
+
+  &__side {
+    display: grid;
+    gap: 1.5rem;
+    justify-items: start;
+  }
+
+  &__text {
+    font-size: var(--fs-lead);
+    line-height: 1.3;
+  }
+
+  &--blue .btn, &--sun .btn, &--pink .btn {
+    --btn-bg: var(--paper);
+    --btn-fg: var(--ink);
+    --btn-hover-bg: var(--ink);
+    --btn-hover-fg: var(--paper);
+    border-color: var(--ink);
+  }
+
+  &--pink .badge{
+    translate: 0 -3rem !important;
+  }
+
+  &__badge {
+    position: absolute;
+    top: -1rem;
+    right: 0;
+    rotate: 12deg;
+
+    @include down(lg) {
+      display: none;
+    }
+  }
+}

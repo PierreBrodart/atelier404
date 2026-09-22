@@ -1,0 +1,40 @@
+@use '../abstracts' as *;
+
+.featured {
+  @include sheet(var(--paper));
+
+  &__grid {
+    display: grid;
+    gap: clamp(3.5rem, 8vw, 6rem) var(--gutter);
+    margin-top: clamp(2.5rem, 6vw, 5rem);
+    align-items: start;
+
+    @include up(lg) {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+  }
+
+  // Composition décalée : les cartes se répondent en diagonale
+  @include up(lg) {
+    &__item--1 {
+      grid-column: 1 / 8;
+    }
+    &__item--2 {
+      grid-column: 9 / 13;
+      margin-top: 12rem;
+    }
+    &__item--3 {
+      grid-column: 2 / 6;
+    }
+    &__item--4 {
+      grid-column: 7 / 13;
+      margin-top: 7rem;
+    }
+  }
+
+  &__more {
+    display: flex;
+    justify-content: center;
+    margin-top: clamp(3rem, 7vw, 6rem);
+  }
+}

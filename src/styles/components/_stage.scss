@@ -1,0 +1,18 @@
+@use '../abstracts' as *;
+
+// Emplacement d'une scène 3D (canvas R3F). Le contenu est décoratif.
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+
+  > div {
+    position: absolute !important;
+    inset: 0;
+  }
+
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}

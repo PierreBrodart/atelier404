@@ -1,0 +1,84 @@
+@use '../abstracts' as *;
+
+.btn {
+  --btn-bg: var(--accent);
+  --btn-fg: var(--on-accent);
+  --btn-hover-bg: var(--ink);
+  --btn-hover-fg: var(--paper);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.95rem 1.4rem 0.95rem 1.7rem;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: var(--border);
+  border-radius: 999px;
+  box-shadow: 4px 4px 0 var(--ink);
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), color 0.35s;
+
+  // Remplissage qui monte depuis le bas au survol / focus
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--btn-hover-bg);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    transform: translateY(102%);
+    transition: transform 0.5s var(--ease-out), border-radius 0.5s var(--ease-out);
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--btn-hover-fg);
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink);
+
+    &::before {
+      transform: none;
+      border-radius: 0;
+    }
+  }
+
+  &:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: progress;
+  }
+
+  &--ink {
+    --btn-bg: var(--ink);
+    --btn-fg: var(--paper);
+    --btn-hover-bg: var(--paper);
+    --btn-hover-fg: var(--ink);
+  }
+
+  &--ghost {
+    --btn-bg: transparent;
+    --btn-fg: var(--ink);
+    box-shadow: none;
+  }
+
+  &__arrow {
+    display: inline-block;
+    font-family: var(--font-mono);
+    transition: transform 0.4s var(--ease-spring);
+  }
+
+  &:hover &__arrow,
+  &:focus-visible &__arrow {
+    transform: translateX(0.35rem);
+  }
+}

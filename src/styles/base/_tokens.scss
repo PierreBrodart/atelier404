@@ -1,0 +1,80 @@
+@use '../abstracts' as *;
+
+// Jetons de design. Les valeurs hex sont dupliquées dans `src/lib/accent.ts` (accentHex) pour la 3D.
+:root {
+  // Palette « papier & encre »
+  --paper: #fff3dc;
+  --paper-deep: #ffe7b8;
+  --ink: #16133b;
+  --ink-soft: #4a4670;
+  --tomato: #ff4a2e;
+  --sun: #ffc61a;
+  --blue: #2a47ff;
+  --mint: #3ed8a0;
+  --pink: #ff8ad1;
+  --danger: #b3200a;
+
+  // Accent de la page courante (surchargé par [data-accent])
+  --accent: var(--tomato);
+  --on-accent: var(--ink);
+
+  // Typographie
+  --font-display: var(--nf-display), 'Arial Narrow', 'Helvetica Neue', system-ui, sans-serif;
+  --font-mono: var(--nf-mono), ui-monospace, 'Cascadia Code', Menlo, monospace;
+  --fs-body: clamp(1rem, 0.95rem + 0.22vw, 1.15rem);
+  --fs-lead: clamp(1.15rem, 1rem + 0.75vw, 1.7rem);
+  --fs-h2: clamp(2.4rem, 1rem + 5.6vw, 7rem);
+  --fs-h3: clamp(1.6rem, 1.1rem + 1.8vw, 2.8rem);
+  --fs-page: clamp(2.9rem, 0.8rem + 8.2vw, 10.5rem);
+  --fs-hero: clamp(3.3rem, 1.1rem + 9.4vw, 13rem);
+
+  // Espacements
+  --gutter: clamp(1rem, 0.4rem + 2.6vw, 3rem);
+  --container: 1680px;
+  --section-y: clamp(4.5rem, 2rem + 9vw, 10rem);
+  --header-h: 5.75rem;
+
+  // Formes
+  --radius: 1rem;
+  --radius-lg: clamp(1.25rem, 2vw, 2rem);
+  --sheet: clamp(1.75rem, 4vw, 3.75rem);
+  --border: 2.5px solid var(--ink);
+  --shadow: 5px 5px 0 var(--ink);
+
+  // Mouvement
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  // Focus (surchargé sur fonds sombres)
+  --focus: var(--ink);
+  --focus-halo: var(--paper);
+
+  color-scheme: light;
+
+  @include up(xxl) {
+    --container: 1840px;
+    font-size: 112.5%;
+  }
+}
+
+// Une couleur par page : elle pilote boutons, en-tête de page et repères de navigation.
+[data-accent='tomato'] {
+  --accent: var(--tomato);
+  --on-accent: var(--ink);
+}
+[data-accent='sun'] {
+  --accent: var(--sun);
+  --on-accent: var(--ink);
+}
+[data-accent='blue'] {
+  --accent: var(--blue);
+  --on-accent: var(--paper);
+}
+[data-accent='mint'] {
+  --accent: var(--mint);
+  --on-accent: var(--ink);
+}
+[data-accent='pink'] {
+  --accent: var(--pink);
+  --on-accent: var(--ink);
+}

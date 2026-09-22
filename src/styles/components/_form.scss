@@ -1,0 +1,263 @@
+@use '../abstracts' as *;
+
+.form {
+  display: grid;
+  gap: 1.5rem;
+
+  &__summary {
+    padding: 1.1rem 1.25rem;
+    background: var(--paper);
+    border: 2.5px solid var(--danger);
+    border-radius: var(--radius);
+    color: var(--danger);
+    font-weight: 700;
+
+    ul {
+      margin-top: 0.5rem;
+      padding-left: 1.2rem;
+    }
+
+    a {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+  }
+
+  // Piège à robots : sorti de l'écran (et masqué aux lecteurs d'écran via aria-hidden)
+  &__trap {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+
+  label {
+    font-weight: 800;
+    font-size: 1.05rem;
+  }
+
+  input:not([type='checkbox']),
+  select,
+  textarea {
+    width: 100%;
+    padding: 0.95rem 1.1rem;
+    background: #fffaf0;
+    border: var(--border);
+    border-radius: var(--radius);
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: box-shadow 0.25s, transform 0.25s;
+  }
+
+  textarea {
+    min-height: 9rem;
+    resize: vertical;
+  }
+
+  input:not([type='checkbox']):focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    box-shadow: 6px 6px 0 var(--ink);
+    transform: translate(-2px, -2px);
+  }
+
+  // Liste déroulante stylée (nice-select2, voir components/ui/Select.tsx).
+  // Le <select> natif reste focusable (clavier, lecteurs d'écran) mais invisible ;
+  // son focus est reporté sur la liste stylée voisine.
+  select.hidden-select {
+    position: absolute;
+    width: 0;
+    height: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
+  .nice-select {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0.95rem 3rem 0.95rem 1.1rem;
+    background: #fffaf0;
+    border: var(--border);
+    border-radius: var(--radius);
+    box-shadow: 3px 3px 0 var(--ink);
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow 0.25s, transform 0.25s;
+
+    // Chevron
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 1.2rem;
+      width: 0.6rem;
+      height: 0.6rem;
+      border-right: 2.5px solid var(--ink);
+      border-bottom: 2.5px solid var(--ink);
+      translate: 0 -75%;
+      rotate: 45deg;
+      transition: rotate 0.3s var(--ease-out);
+      pointer-events: none;
+    }
+
+    &.open::after {
+      rotate: 225deg;
+    }
+
+    &.disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  .nice-select:focus,
+  .nice-select.open,
+  select:focus + .nice-select {
+    outline: none;
+    box-shadow: 6px 6px 0 var(--ink);
+    transform: translate(-2px, -2px);
+  }
+
+  // Au-dessus des champs suivants quand la liste est ouverte
+  .nice-select.open {
+    z-index: 10;
+  }
+
+  .nice-select-dropdown {
+    position: absolute;
+    top: calc(100% + 0.75rem);
+    left: -2.5px;
+    right: -2.5px;
+    max-height: min(28rem, 60vh);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ink) transparent;
+    background: var(--paper);
+    border: var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-0.5rem);
+    transition: opacity 0.2s, transform 0.3s var(--ease-out), visibility 0s 0.3s;
+  }
+
+  .nice-select.open .nice-select-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+  }
+
+  .nice-select .list {
+    margin: 0;
+    padding: 0.4rem;
+    list-style: none;
+  }
+
+  .nice-select .option {
+    padding: 0.7rem 0.9rem;
+    border-radius: calc(var(--radius) - 0.4rem);
+    cursor: pointer;
+    transition: background-color 0.15s;
+
+    &.selected {
+      background: var(--paper-deep);
+      font-weight: 800;
+    }
+
+    &:hover,
+    &.focus {
+      background: var(--sun);
+    }
+
+    &.disabled {
+      opacity: 0.45;
+      cursor: default;
+      pointer-events: none;
+    }
+  }
+
+  &__hint {
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+
+  &__error {
+    color: var(--danger);
+    font-weight: 700;
+    font-size: 0.95rem;
+
+    &::before {
+      content: '⚠ ';
+    }
+  }
+
+  &--error {
+    input:not([type='checkbox']),
+    select,
+    textarea {
+      border-color: var(--danger);
+      box-shadow: 3px 3px 0 var(--danger);
+    }
+
+    .nice-select {
+      border-color: var(--danger);
+      box-shadow: 3px 3px 0 var(--danger);
+    }
+  }
+
+  &--check {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    column-gap: 0.85rem;
+
+    input {
+      width: 1.6rem;
+      height: 1.6rem;
+      margin-top: 0.1rem;
+      accent-color: var(--ink);
+    }
+
+    label {
+      font-weight: 500;
+      font-size: 1rem;
+    }
+
+    .field__error {
+      grid-column: 2;
+    }
+  }
+}
+
+.form-success {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: var(--mint);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 8px 8px 0 var(--ink);
+
+  &__title {
+    @include display(var(--fs-h3));
+  }
+}

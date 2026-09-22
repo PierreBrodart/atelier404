@@ -1,0 +1,57 @@
+@use '../abstracts' as *;
+
+.manifesto {
+  @include sheet(var(--ink));
+  --focus: var(--sun);
+  --focus-halo: var(--ink);
+
+  color: var(--paper);
+
+  &__inner {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    // Le bandeau incliné qui précède déborde sur la section
+    padding-top: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  &__text {
+    @include display(clamp(2rem, 1rem + 4.3vw, 6rem));
+    max-width: 24ch;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    text-wrap: pretty;
+  }
+
+  &__facts {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 1rem;
+
+    @include up(md) {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+  }
+
+  &__fact {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.4rem;
+    padding-top: 1rem;
+    border-top: 2px solid rgb(255 243 220 / 0.3);
+  }
+
+  &__label {
+    @include mono-label;
+    max-width: 28ch;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-size: 0.85rem;
+  }
+
+  &__value {
+    @include display(clamp(3.5rem, 1rem + 7vw, 8.5rem));
+    color: var(--sun);
+  }
+}

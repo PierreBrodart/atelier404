@@ -1,0 +1,61 @@
+@use '../abstracts' as *;
+
+// Pastille de curseur : uniquement souris + mouvement autorisé. Toujours décorative.
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 350;
+  display: none;
+  pointer-events: none;
+
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    display: block;
+  }
+
+  &__dot {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 0.9rem;
+    height: 0.9rem;
+    margin: -0.45rem 0 0 -0.45rem;
+    background: var(--tomato);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    opacity: 0;
+    transition: width 0.4s var(--ease-spring), height 0.4s var(--ease-spring), margin 0.4s var(--ease-spring),
+      background-color 0.3s, opacity 0.3s;
+  }
+
+  &[data-visible='true'] &__dot {
+    opacity: 1;
+  }
+
+  &[data-state='link'] &__dot {
+    width: 2.8rem;
+    height: 2.8rem;
+    margin: -1.4rem 0 0 -1.4rem;
+    background: transparent;
+  }
+
+  &[data-state='label'] &__dot {
+    width: 5.5rem;
+    height: 5.5rem;
+    margin: -2.75rem 0 0 -2.75rem;
+    background: var(--sun);
+  }
+
+  &__label {
+    @include mono-label;
+    font-size: 0.75rem;
+    color: var(--ink);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  &[data-state='label'] &__label {
+    opacity: 1;
+    transition-delay: 0.12s;
+  }
+}

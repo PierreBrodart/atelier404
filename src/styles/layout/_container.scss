@@ -1,0 +1,11 @@
+@use '../abstracts' as *;
+
+.container {
+  width: min(100% - var(--gutter) * 2, var(--container));
+  margin-inline: auto;
+}
+
+// Chaque page est enveloppée dans .page : on y coupe les débordements décoratifs (formes, bandeaux inclinés).
+.page {
+  overflow-x: clip;
+}

@@ -1,0 +1,87 @@
+@use '../abstracts' as *;
+
+.marquee {
+  --mq-bg: var(--sun);
+  --mq-fg: var(--ink);
+
+  position: relative;
+  z-index: 3;
+  overflow: hidden;
+  padding-block: 0.85rem;
+  background: var(--mq-bg);
+  color: var(--mq-fg);
+  border-block: var(--border);
+
+  &--tomato {
+    --mq-bg: var(--tomato);
+  }
+  &--sun {
+    --mq-bg: var(--sun);
+  }
+  &--mint {
+    --mq-bg: var(--mint);
+  }
+  &--pink {
+    --mq-bg: var(--pink);
+  }
+  &--blue {
+    --mq-bg: var(--blue);
+    --mq-fg: var(--paper);
+  }
+
+  // Bandeau de l'accueil : légèrement incliné, il déborde volontairement du cadre
+  &--tilt {
+    width: 104%;
+    margin: -1.75rem -2%;
+    rotate: -1.6deg;
+  }
+
+  &__track {
+    display: flex;
+    width: max-content;
+
+    @include motion-safe {
+      animation: marquee 45s linear infinite;
+    }
+  }
+
+  &__group {
+    display: flex;
+    flex-shrink: 0;
+    list-style: none;
+    padding: 0;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-right: 1.5rem;
+    font-size: clamp(1.6rem, 1rem + 2.8vw, 3.8rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    white-space: nowrap;
+    font-variation-settings: 'wdth' 85;
+  }
+
+  &__star {
+    font-size: 0.7em;
+  }
+
+  // Mouvement réduit : plus de défilement, la liste passe à la ligne et reste lisible.
+  @include motion-reduce {
+    &__track {
+      width: auto;
+    }
+
+    &__group {
+      flex-wrap: wrap;
+      padding-inline: var(--gutter);
+    }
+
+    &__group[aria-hidden] {
+      display: none;
+    }
+  }
+}

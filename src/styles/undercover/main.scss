@@ -1,0 +1,1422 @@
+@use '../abstracts' as *;
+
+// Mini-jeu Undercover : extension du système visuel d'Atelier 404.
+// Chargé uniquement sur /undercover (voir app/undercover/layout.tsx).
+// La couleur de fond suit la phase de jeu, comme la couleur suit la page sur le reste du site.
+
+// ——— Coquille de jeu et couleurs de phase ————————————————————————
+
+.uc {
+  --uc-bg: var(--sun);
+  --uc-fg: var(--ink);
+  --focus: var(--uc-fg);
+  --focus-halo: var(--uc-bg);
+  --em-bg: var(--paper);
+
+  position: relative;
+  min-height: 100svh;
+  padding: calc(var(--header-h) + clamp(1rem, 3vw, 2rem)) 0 calc(4rem + var(--sheet));
+  background: var(--uc-bg);
+  color: var(--uc-fg);
+  transition: background-color 0.8s var(--ease-out), color 0.5s;
+
+  &[data-phase='REVEAL'] {
+    --uc-bg: var(--pink);
+  }
+  &[data-phase='CLUES'] {
+    --uc-bg: var(--mint);
+  }
+  &[data-phase='DISCUSSION'] {
+    --uc-bg: var(--blue);
+    --uc-fg: var(--paper);
+  }
+  &[data-phase='VOTING'] {
+    --uc-bg: var(--tomato);
+  }
+  &[data-phase='RESULT'] {
+    --uc-bg: var(--ink);
+    --uc-fg: var(--paper);
+  }
+  &[data-phase='ELIMINATION'] {
+    --uc-bg: var(--blue);
+    --uc-fg: var(--paper);
+  }
+  &[data-phase='GAME_OVER'] {
+    --uc-bg: var(--mint);
+  }
+  &[data-phase='GAME_OVER'][data-outcome='UNDERCOVER'] {
+    --uc-bg: var(--tomato);
+  }
+  &[data-phase='GAME_OVER'][data-outcome='MR_WHITE'] {
+    --uc-bg: var(--paper-deep);
+  }
+
+  // Sur fond sombre, les anneaux de focus passent en jaune
+  &[data-phase='DISCUSSION'],
+  &[data-phase='RESULT'],
+  &[data-phase='ELIMINATION'] {
+    --focus: var(--sun);
+    --focus-halo: var(--ink);
+  }
+
+  &__inner {
+    display: grid;
+    gap: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  &__stage {
+    display: grid;
+    gap: clamp(1.75rem, 3.6vw, 3rem);
+    align-content: start;
+
+    &--narrow {
+      max-width: 40rem;
+    }
+  }
+
+  &__gone {
+    display: grid;
+    gap: 1.25rem;
+    justify-items: start;
+    padding-top: 3rem;
+  }
+
+  // Barre de la partie : code, mot secret, quitter
+  &__top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2.5px solid currentColor;
+  }
+
+  &__brand {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+
+    // Cible tactile confortable (≥ 44 px)
+    a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+    }
+  }
+
+  &__code {
+    padding: 0.2rem 0.75rem 0.25rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: 0.6rem;
+    box-shadow: 3px 3px 0 var(--ink);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    rotate: -2deg;
+  }
+
+  &__status {
+    padding: 0.2rem 0.7rem;
+    background: var(--sun);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  &__leave {
+    display: flex;
+    gap: 1rem;
+    margin-left: auto;
+  }
+}
+
+// ——— Éléments communs ——————————————————————————————————————————
+
+.uc-head {
+  display: grid;
+  gap: 1rem;
+
+  &__kicker {
+    @include mono-label;
+  }
+
+  &__title {
+    @include display(clamp(2.4rem, 1rem + 6.4vw, 7.5rem));
+    max-width: 14ch;
+
+    &:focus {
+      outline: none;
+    }
+
+    &:focus-visible {
+      outline: 3px dashed currentColor;
+      outline-offset: 0.2em;
+      box-shadow: none;
+    }
+  }
+
+  &__lead {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 44ch;
+    font-size: var(--fs-lead);
+    line-height: 1.35;
+  }
+}
+
+.uc-card {
+  --focus: var(--ink);
+  --focus-halo: var(--paper);
+
+  display: grid;
+  gap: 1.25rem;
+  align-content: start;
+  padding: clamp(1.1rem, 3vw, 2rem);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 8px 8px 0 var(--ink);
+  --em-bg: var(--accent);
+
+  &__title {
+    @include display(clamp(1.4rem, 1rem + 1.4vw, 2.1rem));
+    line-height: 1;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+  }
+}
+
+.uc-count {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  background: var(--sun);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  vertical-align: middle;
+}
+
+.uc-hint {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+
+  .uc-actions & {
+    color: inherit;
+    opacity: 0.85;
+  }
+}
+
+.uc-link-button {
+  padding: 0.35rem 0;
+  min-height: 2.75rem;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 100% 2px no-repeat;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: background-size 0.3s var(--ease-out);
+
+  &:hover,
+  &:focus-visible {
+    background-size: 0% 2px;
+  }
+}
+
+.uc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+
+  // Boutons posés directement sur l'aplat de couleur : papier + contour d'encre, lisibles partout
+  .btn {
+    --btn-bg: var(--paper);
+    --btn-fg: var(--ink);
+    --btn-hover-bg: var(--ink);
+    --btn-hover-fg: var(--paper);
+    border-color: var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    min-height: 3.25rem;
+  }
+
+  .btn--ghost {
+    --btn-bg: transparent;
+    --btn-fg: var(--uc-fg);
+    border-color: currentColor;
+    box-shadow: none;
+    --btn-hover-bg: var(--paper);
+    --btn-hover-fg: var(--ink);
+  }
+}
+
+.uc-card .btn {
+  min-height: 3.25rem;
+}
+
+.uc-waiting {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+// Trois points qui pulsent (attente)
+.uc-dots {
+  display: inline-flex;
+  gap: 0.25rem;
+
+  &::before,
+  &::after,
+  & {
+    content: '';
+  }
+
+  &::before,
+  &::after {
+    width: 0.5rem;
+    height: 0.5rem;
+    background: currentColor;
+    border-radius: 50%;
+  }
+
+  @include motion-safe {
+    &::before {
+      animation: blink 1s steps(2, jump-none) infinite;
+    }
+    &::after {
+      animation: blink 1s steps(2, jump-none) 0.5s infinite;
+    }
+  }
+}
+
+.uc-force {
+  display: flex;
+  justify-content: flex-start;
+  opacity: 0.9;
+}
+
+.uc-toast {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  z-index: 80;
+  max-width: min(32rem, calc(100vw - 2rem));
+  padding: 0.9rem 1.25rem;
+  background: var(--ink);
+  color: var(--paper);
+  border: 2.5px solid var(--paper);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--ink);
+  font-weight: 700;
+  translate: -50% 0;
+
+  @include motion-safe {
+    animation: uc-toast 0.5s var(--ease-spring);
+  }
+}
+
+.uc-myword {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  &__value {
+    padding: 0.2rem 0.75rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: 0.6rem;
+    font-size: 0.95rem;
+  }
+}
+
+// ——— Joueurs ————————————————————————————————————————————————
+
+.uc-players {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+
+  &--ordered {
+    grid-template-columns: 1fr;
+    counter-reset: order;
+  }
+}
+
+.uc-chip {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0.6rem 0.8rem 0.6rem 0.6rem;
+  background: var(--paper-deep);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  min-height: 3.5rem;
+
+  @include motion-safe {
+    animation: uc-pop 0.55s var(--ease-spring) backwards;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+
+  &--me {
+    background: var(--sun);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  // Ni opacité forte ni couleur seule : les états « hors ligne » / « éliminé » restent lisibles (contraste AA)
+  &--offline {
+    border-style: dashed;
+  }
+
+  &--out {
+    background: transparent;
+    border-style: dashed;
+
+    .uc-chip__name {
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+    }
+  }
+
+  &__body {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  &__name {
+    overflow: hidden;
+    font-weight: 800;
+    font-size: 1.05rem;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .uc-clue-text {
+    grid-column: 2 / -1;
+    font-size: 0.95rem;
+    font-style: italic;
+  }
+}
+
+.uc-players--ordered .uc-chip {
+  border-radius: var(--radius);
+  counter-increment: order;
+
+  .uc-avatar::after {
+    content: counter(order);
+  }
+}
+
+.uc-avatar {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  background: var(--tomato);
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  font-weight: 800;
+  line-height: 1;
+
+  &--1 {
+    background: var(--sun);
+  }
+  &--2 {
+    background: var(--blue);
+    color: var(--paper);
+  }
+  &--3 {
+    background: var(--mint);
+  }
+  &--4 {
+    background: var(--pink);
+  }
+}
+
+.uc-tag {
+  padding: 0 0.45rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.5;
+  text-transform: uppercase;
+
+  &--host {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  &--off {
+    border-style: dashed;
+  }
+
+  &--score {
+    background: var(--mint);
+  }
+}
+
+.uc-status {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  font-weight: 800;
+
+  &--done {
+    background: var(--mint);
+  }
+
+  &--now {
+    background: var(--sun);
+
+    @include motion-safe {
+      animation: uc-pulse 1.2s ease-in-out infinite;
+    }
+  }
+}
+
+// ——— Lobby ——————————————————————————————————————————————————
+
+.uc-lobby {
+  display: grid;
+  gap: clamp(1.75rem, 3.6vw, 3rem);
+
+  &__grid {
+    display: grid;
+    gap: 1.35rem;
+
+    // Version compacte des composants, propre au lobby : tout doit tenir dans l'écran
+    .uc-card {
+      gap: 0.85rem;
+      padding: clamp(0.9rem, 2vw, 1.25rem);
+      box-shadow: 5px 5px 0 var(--ink);
+    }
+
+    .uc-card__title {
+      font-size: clamp(1.25rem, 1rem + 0.8vw, 1.6rem);
+    }
+
+    .uc-code {
+      gap: 0.3rem;
+
+      span {
+        width: clamp(2.6rem, 9vw, 3.5rem);
+        font-size: clamp(1.5rem, 4vw, 2.25rem);
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+    }
+
+    .uc-players {
+      gap: 0.5rem;
+    }
+
+    .uc-chip {
+      min-height: 3rem;
+      padding-block: 0.35rem;
+    }
+
+    .uc-avatar {
+      width: 2.1rem;
+      height: 2.1rem;
+    }
+
+    .uc-settings {
+      gap: 0.9rem;
+    }
+
+    .uc-fieldset {
+      gap: 0.5rem;
+
+      legend {
+        margin-bottom: 0.35rem;
+      }
+    }
+
+    .uc-seg,
+    .uc-themes {
+      gap: 0.4rem;
+    }
+
+    .uc-themes {
+      max-height: 12rem;
+    }
+
+    // 2,75 rem = 44 px : on garde une cible tactile confortable
+    .uc-seg__option span,
+    .uc-theme span {
+      min-height: 2.75rem;
+      padding: 0.25rem 0.85rem;
+    }
+
+    @include up(lg) {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        'code settings'
+        'players settings';
+      align-items: start;
+
+      .uc-card--code {
+        grid-area: code;
+      }
+      .uc-card--players {
+        grid-area: players;
+      }
+      .uc-card--settings {
+        grid-area: settings;
+      }
+    }
+  }
+}
+
+.uc-code {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+
+  span {
+    display: grid;
+    place-items: center;
+    width: clamp(3rem, 12vw, 5rem);
+    aspect-ratio: 3 / 4;
+    background: var(--sun);
+    border: var(--border);
+    border-radius: 0.75rem;
+    box-shadow: 4px 4px 0 var(--ink);
+    font-family: var(--font-mono);
+    font-size: clamp(1.8rem, 6vw, 3rem);
+    font-weight: 700;
+
+    @include motion-safe {
+      animation: uc-pop 0.6s var(--ease-spring) backwards;
+    }
+
+    @for $i from 1 through 5 {
+      &:nth-child(#{$i}) {
+        rotate: #{(($i % 3) - 1) * 3}deg;
+        animation-delay: #{$i * 80}ms;
+      }
+    }
+  }
+}
+
+.uc-settings {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.uc-fieldset {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    @include mono-label;
+    margin-bottom: 0.6rem;
+    padding: 0;
+  }
+}
+
+.uc-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+// Boutons radio « pastille » : l'input reste dans le flux d'accessibilité, seule sa forme est remplacée
+.uc-seg__option,
+.uc-theme,
+.uc-vote__option {
+  position: relative;
+  display: block;
+
+  input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+
+.uc-seg__option span,
+.uc-theme span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.9rem;
+  padding: 0.4rem 1rem;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  font-weight: 800;
+  transition: background-color 0.2s, translate 0.3s var(--ease-spring), box-shadow 0.3s;
+}
+
+.uc-seg__option span {
+  min-width: 3.2rem;
+  justify-content: center;
+}
+
+.uc-seg__option input:checked + span,
+.uc-theme input:checked + span {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 3px 3px 0 var(--pink);
+  translate: -1px -1px;
+}
+
+.uc-seg__option input:focus-visible + span,
+.uc-theme input:focus-visible + span,
+.uc-vote__option input:focus-visible + .uc-vote__card {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 6px var(--ink);
+}
+
+@include hover-capable {
+  .uc-seg__option:hover input:not(:checked) + span,
+  .uc-theme:hover input:not(:checked) + span {
+    background: var(--sun);
+    translate: 0 -2px;
+  }
+}
+
+// Interrupteur (ex. rôle caché / visible) : une case à cocher accessible (`role="switch"`) dont on remplace la forme.
+// Posé directement sur l'aplat de couleur de la phase, il suit le style des boutons « ghost ».
+.uc-toggle {
+  position: relative;
+  display: inline-block;
+
+  input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  &__ui {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3.25rem;
+    padding: 0.4rem 1.1rem 0.4rem 0.6rem;
+    border: 2.5px solid currentColor;
+    border-radius: 999px;
+    color: var(--uc-fg);
+    font-weight: 800;
+
+    @include motion-safe {
+      transition: background-color 0.2s, color 0.2s;
+    }
+  }
+
+  &__track {
+    position: relative;
+    flex: none;
+    width: 3.25rem;
+    height: 1.9rem;
+    background: var(--paper);
+    border: 2.5px solid var(--ink);
+    border-radius: 999px;
+
+    @include motion-safe {
+      transition: background-color 0.25s;
+    }
+  }
+
+  &__thumb {
+    position: absolute;
+    top: 50%;
+    left: 0.2rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    background: var(--ink);
+    border-radius: 50%;
+    translate: 0 -50%;
+
+    @include motion-safe {
+      transition: translate 0.3s var(--ease-spring), background-color 0.25s;
+    }
+  }
+
+  &__state {
+    @include mono-label;
+    min-width: 7ch; // « Caché » et « Visible » : la pastille ne change pas de largeur
+  }
+
+  & input:checked + &__ui &__track {
+    background: var(--ink);
+  }
+
+  & input:checked + &__ui &__thumb {
+    background: var(--sun);
+    translate: 1.44rem -50%;
+  }
+
+  & input:focus-visible + &__ui {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px var(--focus-halo), 0 0 0 6px var(--focus);
+  }
+
+  &[data-disabled='true'] {
+    &,
+    input {
+      cursor: not-allowed;
+    }
+
+    .uc-toggle__ui {
+      opacity: 0.45;
+    }
+  }
+}
+
+@include hover-capable {
+  .uc-toggle:hover .uc-toggle__ui {
+    background: var(--paper);
+    color: var(--ink);
+  }
+}
+
+.uc-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-height: 20rem;
+  padding: 0.25rem;
+  margin: -0.25rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink) transparent;
+}
+
+.uc-summary {
+  display: grid;
+  gap: 0.75rem;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.6rem;
+    border-top: 2px solid var(--ink);
+  }
+
+  dt {
+    @include mono-label;
+  }
+
+  dd {
+    font-weight: 800;
+  }
+}
+
+.uc-composition {
+  padding: 0.6rem 0.9rem;
+  background: var(--mint);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius);
+  font-weight: 800;
+
+  &[data-valid='false'] {
+    background: var(--sun);
+  }
+}
+
+// ——— Carte de rôle (retournement 3D) ————————————————————————————
+
+.uc-flip {
+  --role-bg: var(--mint);
+  --role-fg: var(--ink);
+
+  width: min(100%, 22rem);
+  aspect-ratio: 3 / 4;
+  margin-inline: auto;
+  perspective: 1400px;
+  cursor: pointer;
+
+  &[data-role='UNDERCOVER'] {
+    --role-bg: var(--tomato);
+  }
+  &[data-role='MR_WHITE'] {
+    --role-bg: var(--paper);
+  }
+
+  &__card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.9s var(--ease-spring);
+  }
+
+  &[data-flipped='true'] &__card {
+    transform: rotateY(180deg);
+  }
+
+  &__face {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 8px 8px 0 var(--ink);
+    text-align: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    color: var(--ink);
+  }
+
+  &__face--front {
+    background:
+      radial-gradient(var(--ink) 1.2px, transparent 1.6px) 0 0 / 22px 22px,
+      var(--paper);
+  }
+
+  &__face--back {
+    background: var(--role-bg);
+    transform: rotateY(180deg);
+  }
+
+  &[data-role='MR_WHITE'] &__face--back {
+    border-style: dashed;
+  }
+
+  &__mark {
+    display: grid;
+    place-items: center;
+    width: 6rem;
+    height: 6rem;
+    background: var(--sun);
+    border: var(--border);
+    border-radius: 50%;
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1;
+    rotate: -8deg;
+  }
+
+  &__hint,
+  &__kicker {
+    @include mono-label;
+  }
+
+  &__text {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  &__tip {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+}
+
+.uc-role {
+  @include display(clamp(2.2rem, 10vw, 3.4rem));
+}
+
+.uc-word {
+  padding: 0.2rem 0.8rem 0.3rem;
+  background: var(--paper);
+  border: var(--border);
+  border-radius: 0.6rem;
+  box-shadow: 4px 4px 0 var(--ink);
+  font-family: var(--font-mono);
+  font-size: clamp(1.4rem, 6vw, 2rem);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  rotate: -2deg;
+}
+
+// ——— Indices, discussion, vote ————————————————————————————————
+
+.uc-recap {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    padding-block: 0.6rem;
+    border-top: 2px solid var(--ink);
+
+    span {
+      font-style: italic;
+    }
+  }
+}
+
+.uc-vote {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  gap: 0.75rem;
+
+  &__card {
+    display: grid;
+    place-items: center;
+    min-height: 4.5rem;
+    padding: 0.75rem;
+    background: var(--paper-deep);
+    border: var(--border);
+    border-radius: var(--radius);
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: background-color 0.2s, translate 0.3s var(--ease-spring), box-shadow 0.3s, rotate 0.3s var(--ease-spring);
+  }
+
+  &__name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  &__option input:checked + &__card {
+    background: var(--tomato);
+    box-shadow: 6px 6px 0 var(--ink);
+    translate: -2px -2px;
+    rotate: -1.5deg;
+  }
+}
+
+@include hover-capable {
+  .uc-vote__option:hover input:not(:checked) + .uc-vote__card {
+    background: var(--sun);
+    translate: 0 -2px;
+  }
+}
+
+.uc-stamp {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+  padding: 1rem 1.25rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px double var(--ink);
+  border-radius: var(--radius);
+  rotate: -1deg;
+
+  &__title {
+    @include display(clamp(1.6rem, 1rem + 2vw, 2.6rem));
+    text-transform: uppercase;
+    color: var(--tomato);
+    -webkit-text-stroke: 0.02em var(--ink);
+
+    @include motion-safe {
+      animation: uc-stamp 0.6s var(--ease-spring) backwards;
+    }
+  }
+}
+
+// ——— Résultat du vote ————————————————————————————————————————
+
+.uc-result__grid {
+  display: grid;
+  gap: 1.5rem;
+
+  @include up(lg) {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.uc-tally {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(4rem, 8rem) 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__name {
+    overflow: hidden;
+    font-weight: 800;
+    text-overflow: ellipsis;
+  }
+
+  &__bar {
+    height: 1.6rem;
+    width: var(--w);
+    min-width: 0.6rem;
+    background: var(--tomato);
+    border: 2.5px solid var(--ink);
+    border-radius: 999px;
+    transform-origin: left;
+
+    @include motion-safe {
+      animation: uc-grow 0.9s var(--ease-out) backwards;
+      animation-delay: calc(0.3s + var(--i, 0) * 120ms);
+    }
+  }
+
+  &__count {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+}
+
+.uc-ballots {
+  display: grid;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+
+  li {
+    padding-block: 0.4rem;
+    border-top: 2px solid var(--ink);
+
+    @include motion-safe {
+      animation: uc-slide 0.5s var(--ease-out) backwards;
+      animation-delay: calc(0.4s + var(--i, 0) * 140ms);
+    }
+  }
+}
+
+// ——— Fin de manche ————————————————————————————————————————————
+
+.uc-over__me {
+  font-weight: 800;
+}
+
+.uc-words {
+  display: grid;
+  gap: 1rem;
+
+  @include up(md) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  &__item {
+    display: grid;
+    gap: 0.25rem;
+    padding: 1.1rem 1.4rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 6px 6px 0 var(--ink);
+
+    p {
+      @include mono-label;
+    }
+
+    strong {
+      @include display(clamp(2rem, 1rem + 3.4vw, 4rem));
+      overflow-wrap: anywhere;
+    }
+
+    &--civil {
+      rotate: -1deg;
+      background: var(--mint);
+    }
+
+    &--under {
+      rotate: 1deg;
+      background: var(--tomato);
+    }
+  }
+}
+
+.uc-role-tag {
+  padding: 0.15rem 0.7rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+
+  &--CIVIL {
+    background: var(--mint);
+  }
+  &--UNDERCOVER {
+    background: var(--tomato);
+  }
+  &--MR_WHITE {
+    background: var(--paper);
+    border-style: dashed;
+  }
+}
+
+.uc-scores {
+  width: 100%;
+  border-collapse: collapse;
+
+  &__caption {
+    @include display(clamp(1.4rem, 1rem + 1.4vw, 2.1rem));
+    margin-bottom: 0.75rem;
+    text-align: left;
+  }
+
+  th,
+  td {
+    padding: 0.6rem 0.5rem;
+    border-top: 2px solid var(--ink);
+    text-align: left;
+  }
+
+  thead th {
+    @include mono-label;
+    font-size: 0.7rem;
+  }
+
+  tbody th {
+    font-weight: 800;
+  }
+
+  td {
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+}
+
+.uc-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  overflow: hidden;
+  pointer-events: none;
+
+  span {
+    position: absolute;
+    top: 0;
+    width: 0.7rem;
+    height: 1.1rem;
+    border: 2px solid var(--ink);
+    border-radius: 0.15rem;
+  }
+}
+
+// ——— Page d'accueil du jeu ——————————————————————————————————————
+
+.uc-start {
+  @include sheet(var(--paper));
+}
+
+.uc-entry {
+  display: grid;
+  gap: 1.5rem;
+
+  &__resume {
+    padding: 0.9rem 1.2rem;
+    background: var(--sun);
+    border: var(--border);
+    border-radius: var(--radius);
+    font-weight: 700;
+  }
+
+  &__name {
+    max-width: 26rem;
+  }
+
+  &__grid {
+    display: grid;
+    gap: 1.5rem;
+
+    @include up(md) {
+      grid-template-columns: 1fr 1fr;
+      align-items: stretch;
+    }
+
+    .btn {
+      justify-self: start;
+    }
+  }
+
+  .uc-card--create {
+    background: var(--pink);
+  }
+
+  .uc-card--join {
+    background: var(--mint);
+  }
+}
+
+.uc-code-input {
+  font-family: var(--font-mono);
+  font-size: 1.6rem !important;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.uc-link {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+.uc-rules {
+  @include sheet(var(--ink));
+  --focus: var(--sun);
+  --focus-halo: var(--ink);
+
+  color: var(--paper);
+
+  &__roles {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: clamp(2rem, 5vw, 3.5rem);
+    list-style: none;
+    padding: 0;
+
+    @include up(md) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  &__role {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: 2.5px solid var(--paper);
+    border-radius: var(--radius-lg);
+    box-shadow: 6px 6px 0 var(--pink);
+
+    h3 {
+      @include display(clamp(1.8rem, 1rem + 2vw, 2.8rem));
+    }
+
+    &--civil {
+      background: var(--mint);
+      rotate: -1deg;
+    }
+
+    &--under {
+      background: var(--tomato);
+      rotate: 1deg;
+    }
+
+    &--white {
+      border-style: dashed;
+      rotate: -0.5deg;
+    }
+  }
+
+  &__steps {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: clamp(2rem, 5vw, 3.5rem);
+    list-style: none;
+    padding: 0;
+    counter-reset: step;
+
+    li {
+      display: grid;
+      grid-template-columns: 3.5rem 1fr;
+      align-items: baseline;
+      padding-block: 1rem;
+      border-top: 2px solid rgb(255 243 220 / 0.3);
+      font-size: var(--fs-lead);
+      line-height: 1.3;
+    }
+
+    span {
+      color: var(--sun);
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+  }
+
+  &__note {
+    margin-top: 1.5rem;
+    max-width: 60ch;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    opacity: 0.85;
+  }
+}
+
+// ——— Animations propres au jeu (désactivées par prefers-reduced-motion) ————
+
+@keyframes uc-pop {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+@keyframes uc-slide {
+  from {
+    opacity: 0;
+    translate: -1rem 0;
+  }
+}
+
+@keyframes uc-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes uc-stamp {
+  from {
+    opacity: 0;
+    scale: 2.2;
+    rotate: 12deg;
+  }
+}
+
+@keyframes uc-pulse {
+  50% {
+    scale: 1.18;
+  }
+}
+
+@keyframes uc-toast {
+  from {
+    opacity: 0;
+    translate: -50% 1.5rem;
+  }
+}

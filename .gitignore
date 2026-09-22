@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+next-env.d.ts
+*.tsbuildinfo
+.env*.local
+# Paquet de déploiement reconstitué localement (voir TECHNICAL.md) : jamais versionné.
+deploy/
+*.tar.gz
+*.zip

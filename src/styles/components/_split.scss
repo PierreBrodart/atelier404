@@ -1,0 +1,33 @@
+@use '../abstracts' as *;
+
+// Mots découpés par <Split> : chaque mot est masqué (overflow) pendant sa montée.
+.split {
+  &__word {
+    display: inline-block;
+    vertical-align: top;
+    padding: 0.06em 0.05em 0.14em;
+    margin: -0.06em -0.05em -0.14em;
+
+    // Le masque n'existe que le temps de l'animation d'entrée
+    .motion-ok [data-reveal='words']:not(.is-revealed) & {
+      overflow: hidden;
+    }
+  }
+
+  &__inner {
+    display: inline-block;
+    transition: font-variation-settings 0.4s var(--ease-out), color 0.25s;
+  }
+
+  // Mot mis en valeur (*mot*) : pastille inclinée, façon autocollant
+  &__word--em &__inner {
+    padding: 0 0.16em 0.05em;
+    margin-inline: 0.04em;
+    background: var(--em-bg, var(--accent));
+    color: var(--em-fg, var(--on-accent));
+    border: 0.055em solid var(--ink);
+    border-radius: 0.3em;
+    box-shadow: 0.06em 0.07em 0 var(--ink);
+    rotate: -2.5deg;
+  }
+}

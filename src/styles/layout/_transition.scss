@@ -1,0 +1,33 @@
+@use '../abstracts' as *;
+
+// Rideau de transition entre les pages (voir components/layout/PageTransition.tsx).
+// Les transformations sont posées par GSAP : aucune transform initiale ici.
+.wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  visibility: hidden;
+  pointer-events: none;
+
+  &__panel {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    will-change: transform;
+  }
+
+  &__mask {
+    display: block;
+    overflow: hidden;
+    padding: 0.05em 0.3em 0.12em;
+  }
+
+  &__label {
+    display: block;
+    font-size: clamp(3rem, 1rem + 11vw, 13rem);
+    font-weight: 800;
+    line-height: 1;
+    font-variation-settings: 'wdth' 82;
+  }
+}

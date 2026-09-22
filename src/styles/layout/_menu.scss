@@ -1,0 +1,96 @@
+@use '../abstracts' as *;
+
+// Menu mobile plein écran (< 1024px). Fermé : `visibility: hidden` + `inert` (pas de focus possible).
+.menu {
+  --focus: var(--sun);
+  --focus-halo: var(--ink);
+
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 6.5rem var(--gutter) 2rem;
+  background: var(--ink);
+  color: var(--paper);
+  visibility: hidden;
+  pointer-events: auto;
+  clip-path: circle(0% at calc(100% - 3.5rem) 2.6rem);
+  transition: clip-path 0.7s var(--ease-out), visibility 0s 0.7s;
+
+  &[data-open='true'] {
+    visibility: visible;
+    clip-path: circle(150% at calc(100% - 3.5rem) 2.6rem);
+    transition: clip-path 0.7s var(--ease-out), visibility 0s;
+  }
+
+  @include up(lg) {
+    display: none;
+  }
+
+  &__list {
+    list-style: none;
+    padding: 0;
+  }
+
+  &__item {
+    opacity: 0;
+    transform: translateY(2.5rem);
+    transition: opacity 0.5s, transform 0.7s var(--ease-out);
+    transition-delay: 0s;
+  }
+
+  &[data-open='true'] &__item {
+    opacity: 1;
+    transform: none;
+    transition-delay: calc(0.2s + var(--i) * 0.07s);
+  }
+
+  &__link {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.12em 0;
+    border-bottom: 2px solid rgb(255 243 220 / 0.22);
+    font-size: clamp(2.8rem, 13vw, 5.5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    font-variation-settings: 'wdth' 85;
+
+    // Pastille de la couleur de la page : visible sur la page courante et au survol/focus
+    &::after {
+      content: '';
+      width: 0.5em;
+      height: 0.5em;
+      align-self: center;
+      margin-left: auto;
+      background: var(--link-accent);
+      border-radius: 50%;
+      scale: 0;
+      transition: scale 0.4s var(--ease-spring);
+    }
+
+    &:hover::after,
+    &:focus-visible::after,
+    &[aria-current='page']::after {
+      scale: 1;
+    }
+  }
+
+  &__index {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+  }
+
+  &__note {
+    margin-top: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    opacity: 0.75;
+  }
+}

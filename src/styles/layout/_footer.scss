@@ -1,0 +1,129 @@
+@use '../abstracts' as *;
+
+.footer {
+  --focus: var(--sun);
+  --focus-halo: var(--ink);
+
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--sheet) var(--sheet) 0 0;
+  margin-top: calc(var(--sheet) * -1);
+
+  &__inner {
+    padding-block: clamp(3rem, 8vw, 7rem) 2rem;
+  }
+
+  &__eyebrow {
+    @include mono-label;
+    color: var(--sun);
+  }
+
+  &__mail {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-size: clamp(1.7rem, 0.9rem + 4.6vw, 6.5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+    font-variation-settings: 'wdth' 88;
+  }
+
+  &__cols {
+    display: grid;
+    gap: 2.5rem;
+    margin-top: clamp(3rem, 7vw, 6rem);
+
+    @include up(md) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  &__title {
+    @include mono-label;
+    margin-bottom: 1rem;
+    color: var(--sun);
+  }
+
+  &__col ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  &__col li + li {
+    margin-top: 0.35rem;
+  }
+
+  &__col a {
+    display: inline-block;
+    padding-block: 0.15rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0% 2px no-repeat;
+    transition: background-size 0.4s var(--ease-out);
+
+    &:hover,
+    &:focus-visible {
+      background-size: 100% 2px;
+    }
+  }
+
+  // Lien vers le mini-jeu (remplace Mastodon dans la colonne « Suivre »)
+  &__game {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  &__game-tag {
+    padding: 0.05rem 0.5rem 0.1rem;
+    background: var(--pink);
+    color: var(--ink);
+    border-radius: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    rotate: -4deg;
+    transition: rotate 0.4s var(--ease-spring);
+  }
+
+  &__game:hover &__game-tag,
+  &__game:focus-visible &__game-tag {
+    rotate: 5deg;
+  }
+
+  &__word {
+    margin-top: clamp(2.5rem, 6vw, 5rem);
+    font-size: min(21vw, 26rem);
+    font-weight: 800;
+    line-height: 0.78;
+    text-align: center;
+    white-space: nowrap;
+    user-select: none;
+    font-variation-settings: 'wdth' 80;
+
+    span {
+      color: var(--tomato);
+    }
+  }
+
+  &__legal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 2px solid rgb(255 243 220 / 0.2);
+    font-size: 0.9rem;
+    opacity: 0.85;
+
+    @include up(md) {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+  }
+}

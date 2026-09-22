@@ -1,0 +1,93 @@
+@use '../abstracts' as *;
+
+// Index des services : la couleur de fond suit la ligne active (variables posées par ServiceIndex).
+.service-index {
+  @include sheet(var(--sx-bg, var(--blue)));
+  --focus: var(--sx-fg);
+  --focus-halo: var(--sx-bg);
+  --em-bg: var(--paper);
+
+  color: var(--sx-fg, var(--paper));
+  transition: background-color 0.7s var(--ease-out), color 0.5s;
+
+  &__grid {
+    display: grid;
+    gap: 3rem;
+
+    @include up(lg) {
+      grid-template-columns: 5fr 7fr;
+      gap: clamp(2rem, 6vw, 7rem);
+    }
+  }
+
+  &__intro {
+    @include up(lg) {
+      position: sticky;
+      top: 6.5rem;
+      align-self: start;
+    }
+  }
+
+  &__stage {
+    width: min(100%, 24rem);
+    margin-top: 1.5rem;
+
+    @include down(lg) {
+      display: none;
+    }
+  }
+
+  &__list {
+    list-style: none;
+    padding: 0;
+    border-bottom: 2.5px solid currentColor;
+  }
+}
+
+.service-row {
+  border-top: 2.5px solid currentColor;
+
+  &__link {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    gap: 0.75rem 1.5rem;
+    padding: clamp(1.1rem, 2.4vw, 1.9rem) 0;
+    transition: padding 0.5s var(--ease-out);
+  }
+
+  &__number {
+    @include mono-label;
+  }
+
+  &__name {
+    display: block;
+    font-size: clamp(1.8rem, 1rem + 2.6vw, 3.6rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variation-settings: 'wdth' 88;
+  }
+
+  &__tagline {
+    display: block;
+    margin-top: 0.55rem;
+    max-width: 38ch;
+    font-size: 1.05rem;
+    line-height: 1.35;
+  }
+
+  &__arrow {
+    font-family: var(--font-mono);
+    font-size: 1.6rem;
+    transition: transform 0.5s var(--ease-spring);
+  }
+
+  &[data-active='true'] &__link {
+    padding-left: clamp(0.5rem, 2vw, 1.5rem);
+  }
+
+  &[data-active='true'] &__arrow {
+    transform: translateX(0.4rem) rotate(-45deg);
+  }
+}

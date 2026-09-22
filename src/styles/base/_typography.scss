@@ -1,0 +1,16 @@
+@use '../abstracts' as *;
+
+// Les titres « d'affichage » sont définis par leurs composants (BEM) via le mixin `display`.
+.lead {
+  font-size: var(--fs-lead);
+  line-height: 1.35;
+}
+
+.label {
+  @include mono-label;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--sun);
+}

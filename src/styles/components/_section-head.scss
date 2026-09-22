@@ -1,0 +1,24 @@
+@use '../abstracts' as *;
+
+.section-head {
+  &__label {
+    @include mono-label;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+  }
+
+  &__dot {
+    display: inline-block;
+    width: 0.8rem;
+    height: 0.8rem;
+    background: currentColor;
+    border-radius: 50%;
+  }
+
+  &__title {
+    @include display(var(--fs-h2));
+    max-width: 16ch;
+  }
+}

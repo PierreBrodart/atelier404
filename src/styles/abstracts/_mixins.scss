@@ -1,0 +1,64 @@
+@use 'sass:map';
+@use 'variables' as *;
+
+/// Styles à partir d'un point de rupture (min-width).
+@mixin up($key) {
+  @media (min-width: map.get($breakpoints, $key)) {
+    @content;
+  }
+}
+
+/// Styles en dessous d'un point de rupture (max-width).
+@mixin down($key) {
+  @media (max-width: map.get($breakpoints, $key) - 0.02px) {
+    @content;
+  }
+}
+
+/// Uniquement pour les appareils avec un vrai survol (souris / trackpad).
+@mixin hover-capable {
+  @media (hover: hover) and (pointer: fine) {
+    @content;
+  }
+}
+
+@mixin motion-safe {
+  @media (prefers-reduced-motion: no-preference) {
+    @content;
+  }
+}
+
+@mixin motion-reduce {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+/// « Feuille de papier » : la section recouvre la précédente avec des coins arrondis.
+@mixin sheet($bg: var(--paper)) {
+  position: relative;
+  background: $bg;
+  border-radius: var(--sheet) var(--sheet) 0 0;
+  margin-top: calc(var(--sheet) * -1);
+  padding-block: var(--section-y);
+  padding-bottom: calc(var(--section-y) + var(--sheet));
+}
+
+/// Titre d'affichage (police expressive, serrée, condensée).
+@mixin display($size: var(--fs-h2)) {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: $size;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  font-variation-settings: 'wdth' var(--wdth, 88);
+  text-wrap: balance;
+}
+
+@mixin mono-label {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

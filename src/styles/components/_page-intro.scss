@@ -1,0 +1,96 @@
+@use '../abstracts' as *;
+
+// En-tête des pages secondaires : grand aplat de la couleur de la page.
+.page-intro {
+  --pi-bg: var(--tomato);
+  --pi-fg: var(--ink);
+
+  position: relative;
+  overflow: clip;
+  padding: calc(var(--header-h) + clamp(2.5rem, 7vw, 6rem)) 0 calc(var(--section-y) + var(--sheet));
+  background: var(--pi-bg);
+  color: var(--pi-fg);
+
+  --em-bg: var(--paper);
+  --em-fg: var(--ink);
+
+  &--tomato {
+    --pi-bg: var(--tomato);
+  }
+  &--sun {
+    --pi-bg: var(--sun);
+  }
+  &--blue {
+    --pi-bg: var(--blue);
+    --pi-fg: var(--paper);
+    --focus: var(--sun);
+    --focus-halo: var(--ink);
+  }
+  &--mint {
+    --pi-bg: var(--mint);
+  }
+  &--pink {
+    --pi-bg: var(--pink);
+  }
+
+  &__inner {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 2.5rem;
+
+    @include up(lg) {
+      grid-template-columns: 8fr 4fr;
+      align-items: end;
+    }
+  }
+
+  &__label {
+    @include mono-label;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__title {
+    @include display(var(--fs-page));
+    max-width: 14ch;
+  }
+
+  &__text {
+    max-width: 46ch;
+    margin-top: 2rem;
+    font-size: var(--fs-lead);
+    line-height: 1.35;
+  }
+
+  // Formes décoratives qui dérivent au scroll (mouvement désactivé si réduit)
+  &__blob {
+    position: absolute;
+    z-index: 1;
+    border: var(--border);
+    border-radius: 50%;
+    pointer-events: none;
+
+    &--a {
+      top: 18%;
+      right: -6vw;
+      width: clamp(9rem, 26vw, 26rem);
+      aspect-ratio: 1;
+      background: var(--paper);
+      opacity: 0.55;
+    }
+
+    &--b {
+      bottom: 10%;
+      right: 22%;
+      width: clamp(4rem, 9vw, 9rem);
+      aspect-ratio: 1;
+      background: var(--ink);
+      opacity: 0.9;
+      border-radius: 1.2rem;
+      rotate: 18deg;
+    }
+  }
+}

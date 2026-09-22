@@ -1,0 +1,31 @@
+# Tout ce qui n'a pas besoin d'entrer dans le contexte de build Docker :
+# image plus légère à construire, cache plus stable, aucun secret local embarqué.
+
+node_modules
+.next
+out
+deploy
+*.tar.gz
+*.zip
+
+.git
+.github
+
+*.md
+!TECHNICAL.md
+
+.env
+.env*.local
+.env.example
+
+.vscode
+.idea
+*.log
+npm-debug.log*
+
+.DS_Store
+Thumbs.db
+
+Dockerfile
+.dockerignore
+docker-compose.yml

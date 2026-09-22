@@ -1,0 +1,148 @@
+@use '../abstracts' as *;
+
+.pindex-section {
+  @include sheet(var(--paper));
+}
+
+// Index typographique des projets
+.pindex {
+  list-style: none;
+  padding: 0;
+  border-top: 2.5px solid var(--ink);
+
+  &__row {
+    border-bottom: 2.5px solid var(--ink);
+  }
+
+  &__link {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr auto;
+    grid-template-areas:
+      'thumb name arrow'
+      'thumb cat  cat'
+      'thumb year year';
+    align-items: center;
+    column-gap: 1.1rem;
+    padding: 1.25rem 0.5rem;
+    transition: background-color 0.35s, color 0.35s, padding 0.5s var(--ease-out);
+
+    @include up(md) {
+      grid-template-columns: 8rem 1fr auto;
+      column-gap: 2rem;
+    }
+
+    @include hover-capable {
+      @include up(lg) {
+        grid-template-columns: 6rem 1fr 20rem 3rem;
+        grid-template-areas: 'year name cat arrow';
+        padding: clamp(1.5rem, 2.6vw, 2.5rem) 1rem;
+      }
+
+      &:hover,
+      &:focus-visible {
+        padding-left: 2.5rem;
+      }
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: var(--row-bg);
+      color: var(--row-fg);
+    }
+  }
+
+  &__year {
+    grid-area: year;
+    @include mono-label;
+  }
+
+  &__name {
+    grid-area: name;
+    @include display(clamp(2.4rem, 1rem + 6.2vw, 8rem));
+    overflow-wrap: anywhere;
+  }
+
+  &__cat {
+    grid-area: cat;
+    @include mono-label;
+    font-size: 0.75rem;
+  }
+
+  &__arrow {
+    grid-area: arrow;
+    font-family: var(--font-mono);
+    font-size: 1.8rem;
+    transition: transform 0.5s var(--ease-spring);
+  }
+
+  &__link:hover &__arrow,
+  &__link:focus-visible &__arrow {
+    transform: translate(0.25rem, -0.25rem);
+  }
+
+  // Vignette intégrée aux lignes (mobile / tactile) — remplacée par l'aperçu flottant au survol
+  &__thumb {
+    position: relative;
+    grid-area: thumb;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: var(--border);
+    border-radius: 0.75rem;
+
+    @include hover-capable {
+      @include up(lg) {
+        display: none;
+      }
+    }
+  }
+
+  &__thumb-img {
+    object-fit: cover;
+  }
+
+  // Aperçu flottant (souris uniquement, desktop) : suit le curseur
+  &__preview {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 45;
+    display: none;
+    width: 22rem;
+    aspect-ratio: 4 / 3;
+    margin: -8rem 0 0 -11rem;
+    overflow: hidden;
+    border: var(--border);
+    border-radius: 1rem;
+    box-shadow: 8px 8px 0 var(--ink);
+    pointer-events: none;
+    opacity: 0;
+    scale: 0.6;
+    transition: opacity 0.25s, scale 0.45s var(--ease-spring);
+
+    @include hover-capable {
+      @include up(lg) {
+        display: block;
+      }
+    }
+
+    &[data-visible='true'] {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+
+  &__preview-item {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+
+    &[data-on='true'] {
+      opacity: 1;
+    }
+  }
+
+  &__preview-img {
+    object-fit: cover;
+  }
+}

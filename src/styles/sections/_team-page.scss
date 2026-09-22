@@ -1,0 +1,115 @@
+@use '../abstracts' as *;
+
+.team-list {
+  @include sheet(var(--paper));
+
+  &__grid {
+    display: grid;
+    gap: clamp(3rem, 6vw, 4rem) var(--gutter);
+
+    @include up(md) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @include up(lg) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+
+      > :nth-child(2) {
+        margin-top: 5rem;
+      }
+      > :nth-child(3) {
+        margin-top: 2rem;
+      }
+    }
+  }
+}
+
+.values {
+  @include sheet(var(--ink));
+  --focus: var(--sun);
+  --focus-halo: var(--ink);
+
+  color: var(--paper);
+
+  &__list {
+    display: grid;
+    gap: 0;
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+    list-style: none;
+    padding: 0;
+    border-bottom: 2px solid rgb(255 243 220 / 0.3);
+  }
+
+  &__item {
+    display: grid;
+    gap: 0.5rem 1.5rem;
+    padding-block: 1.5rem;
+    border-top: 2px solid rgb(255 243 220 / 0.3);
+
+    @include up(lg) {
+      grid-template-columns: 5rem 5fr 6fr;
+      align-items: baseline;
+    }
+  }
+
+  &__num {
+    @include mono-label;
+    color: var(--sun);
+  }
+
+  &__title {
+    @include display(clamp(2rem, 1rem + 3vw, 4.5rem));
+    transition: color 0.3s, letter-spacing 0.5s var(--ease-out);
+  }
+
+  &__item:hover &__title {
+    color: var(--pink);
+    --wdth: 100;
+  }
+
+  &__text {
+    max-width: 44ch;
+    font-size: 1.1rem;
+  }
+}
+
+.join {
+  @include sheet(var(--sun));
+
+  &__inner {
+    display: grid;
+    gap: 2.5rem;
+
+    @include up(lg) {
+      grid-template-columns: 6fr 5fr;
+      align-items: center;
+      column-gap: clamp(2rem, 6vw, 6rem);
+    }
+  }
+
+  &__photo {
+    overflow: hidden;
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 10px 10px 0 var(--ink);
+    rotate: -1.5deg;
+
+    img {
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  &__text {
+    display: grid;
+    gap: 1.25rem;
+    justify-items: start;
+    font-size: var(--fs-lead);
+    line-height: 1.35;
+  }
+
+  &__title {
+    @include display(var(--fs-h2));
+  }
+}

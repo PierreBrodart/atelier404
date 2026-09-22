@@ -1,0 +1,32 @@
+# Déploiement Dokploy (ou tout hôte Docker) à partir du Dockerfile du dépôt.
+#
+# Dans Dokploy : créer une application de type "Docker Compose", pointer sur ce fichier,
+# renseigner les build args ci-dessous dans l'onglet correspondant (ou directement dans
+# ce fichier si vous préférez le versionner), attacher un domaine sur le port interne 3000.
+#
+# ⚠️ Un seul réplica : le jeu Undercover garde son état en mémoire dans le processus
+# (voir TECHNICAL.md §9 et §12). Ne pas activer de scaling horizontal sur ce service.
+
+services:
+  atelier404:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Domaine public final (sitemap, Open Graph, robots.txt).
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://atelier404.fr}
+        # Sous-chemin si le site ne vit pas à la racine du domaine (ex. /atelier404).
+        NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-}
+        # URL d'un service de formulaire externe (Formspree…) ; vide = envoi simulé.
+        NEXT_PUBLIC_FORM_ENDPOINT: ${NEXT_PUBLIC_FORM_ENDPOINT:-}
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: '3000'
+      HOSTNAME: '0.0.0.0'
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512M

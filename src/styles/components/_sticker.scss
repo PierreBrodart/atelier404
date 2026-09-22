@@ -1,0 +1,78 @@
+@use '../abstracts' as *;
+
+.sticker {
+  --sticker-bg: var(--sun);
+
+  display: inline-block;
+  padding: 0.45rem 0.9rem;
+  background: var(--sticker-bg);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 0.6rem;
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  rotate: var(--tilt, 0deg);
+
+  @include motion-safe {
+    animation: wiggle 6s ease-in-out infinite;
+  }
+
+  &--tomato {
+    --sticker-bg: var(--tomato);
+  }
+  &--sun {
+    --sticker-bg: var(--sun);
+  }
+  &--mint {
+    --sticker-bg: var(--mint);
+  }
+  &--pink {
+    --sticker-bg: var(--pink);
+  }
+  &--blue {
+    --sticker-bg: var(--blue);
+    color: var(--paper);
+  }
+}
+
+// Pastille ronde au texte circulaire
+.badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(6.5rem, 12vw, 9.5rem);
+  aspect-ratio: 1;
+  background: var(--sun);
+  border: var(--border);
+  border-radius: 50%;
+  box-shadow: 4px 4px 0 var(--ink);
+
+  &__ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+
+    @include motion-safe {
+      animation: spin 20s linear infinite;
+    }
+
+    text {
+      fill: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+  }
+
+  &__core {
+    font-family: var(--font-mono);
+    font-size: clamp(1.1rem, 2vw, 1.6rem);
+    font-weight: 700;
+  }
+}

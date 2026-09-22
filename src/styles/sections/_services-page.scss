@@ -1,0 +1,231 @@
+@use '../abstracts' as *;
+
+// Collage de photos dans l'en-tête de la page Services
+.page-intro__collage {
+  position: relative;
+  display: none;
+  height: clamp(18rem, 30vw, 32rem);
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.page-intro__shot {
+  position: absolute;
+  overflow: hidden;
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: 6px 6px 0 var(--ink);
+
+  img {
+    object-fit: cover;
+  }
+
+  &--1 {
+    top: 0;
+    right: 8%;
+    width: 62%;
+    aspect-ratio: 4 / 3;
+    rotate: 4deg;
+  }
+
+  &--2 {
+    top: 32%;
+    left: 0;
+    width: 46%;
+    aspect-ratio: 1;
+    rotate: -6deg;
+  }
+
+  &--3 {
+    right: 0;
+    bottom: 0;
+    width: 52%;
+    aspect-ratio: 4 / 3;
+    rotate: -2deg;
+  }
+}
+
+// Une bande colorée par service : les bandes se superposent comme des feuilles
+.service-bands {
+  display: block;
+}
+
+.service-band {
+  @include sheet(var(--band-bg));
+  --focus: var(--band-fg);
+  --focus-halo: var(--band-bg);
+  --em-bg: var(--paper);
+
+  overflow: clip;
+  color: var(--band-fg);
+  scroll-margin-top: 4rem;
+
+  &__ghost {
+    position: absolute;
+    top: 0;
+    right: -2%;
+    font-size: clamp(14rem, 44vw, 46rem);
+    font-weight: 800;
+    letter-spacing: -0.08em;
+    line-height: 0.8;
+    opacity: 0.13;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  &__inner {
+    position: relative;
+    display: grid;
+    gap: 2rem;
+
+    @include up(lg) {
+      grid-template-columns: 6fr 5fr;
+      column-gap: clamp(2rem, 6vw, 7rem);
+      align-items: start;
+    }
+  }
+
+  &__number {
+    @include mono-label;
+    margin-bottom: 1.25rem;
+  }
+
+  &__title {
+    @include display(clamp(2.6rem, 1rem + 5.6vw, 7.5rem));
+  }
+
+  &__tagline {
+    margin-top: 1.25rem;
+    max-width: 30ch;
+    font-size: var(--fs-lead);
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  &__desc {
+    max-width: 48ch;
+    font-size: 1.15rem;
+    line-height: 1.5;
+  }
+
+  &__sub {
+    @include mono-label;
+    margin: 2rem 0 0.75rem;
+  }
+
+  &__list {
+    list-style: none;
+    padding: 0;
+
+    li {
+      padding-block: 0.6rem;
+      border-top: 2px solid currentColor;
+      font-size: 1.1rem;
+      font-weight: 700;
+
+      &::before {
+        content: '✦';
+        margin-right: 0.75rem;
+      }
+
+      &:last-child {
+        border-bottom: 2px solid currentColor;
+      }
+    }
+  }
+}
+
+// Déroulé en 5 étapes
+.process {
+  @include sheet(var(--paper));
+
+  &__list {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+    list-style: none;
+    padding: 0;
+
+    @include up(md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include up(xl) {
+      grid-template-columns: repeat(5, 1fr);
+      align-items: start;
+    }
+  }
+
+  &__step {
+    --step-bg: var(--tomato);
+    --step-fg: var(--ink);
+
+    padding: 1.5rem;
+    background: var(--step-bg);
+    color: var(--step-fg);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    transition: translate 0.5s var(--ease-spring), rotate 0.5s var(--ease-spring);
+
+    &:hover {
+      translate: 0 -0.5rem;
+      rotate: -1.5deg;
+    }
+
+    &:nth-child(2) {
+      --step-bg: var(--sun);
+    }
+    &:nth-child(3) {
+      --step-bg: var(--mint);
+    }
+    &:nth-child(4) {
+      --step-bg: var(--pink);
+    }
+    &:nth-child(5) {
+      --step-bg: var(--blue);
+      --step-fg: var(--paper);
+    }
+
+    // Escalier descendant sur grand écran
+    @include up(xl) {
+      &:nth-child(2) {
+        margin-top: 1.5rem;
+      }
+      &:nth-child(3) {
+        margin-top: 3rem;
+      }
+      &:nth-child(4) {
+        margin-top: 4.5rem;
+      }
+      &:nth-child(5) {
+        margin-top: 6rem;
+      }
+    }
+  }
+
+  &__number {
+    display: inline-grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: 50%;
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+
+  &__title {
+    @include display(1.9rem);
+    margin-top: 1.25rem;
+  }
+
+  &__text {
+    margin-top: 0.75rem;
+    line-height: 1.45;
+  }
+}

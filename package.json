@@ -1,0 +1,31 @@
+{
+  "name": "atelier-404",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test:undercover": "node scripts/undercover-e2e.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/react": "~19.2",
+    "@types/react-dom": "~19.2",
+    "@types/three": "^0.186.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.5",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^9.7.0",
+    "gsap": "^3.15.0",
+    "next": "^16.3.5",
+    "nice-select2": "^2.5.0",
+    "react": "~19.2",
+    "react-dom": "~19.2",
+    "sass": "^1.104.1",
+    "three": "^0.186.0"
+  }
+}

@@ -1,0 +1,26 @@
+@use '../abstracts' as *;
+
+.media {
+  position: relative;
+  overflow: hidden;
+  background: var(--paper-deep);
+  aspect-ratio: var(--ratio-sm, var(--ratio));
+
+  @include up(md) {
+    aspect-ratio: var(--ratio);
+  }
+
+  &__layer {
+    position: absolute;
+    inset: 0;
+
+    // Plus haute que le cadre : laisse de la marge à la parallaxe
+    &--shifted {
+      inset: -8% 0;
+    }
+  }
+
+  &__img {
+    object-fit: cover;
+  }
+}
