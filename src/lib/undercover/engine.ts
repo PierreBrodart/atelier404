@@ -80,7 +80,6 @@ export function createRoom(code: string, host: ServerPlayer): Room {
     revision: 0,
     scores: { [host.id]: 0 },
     game: null,
-    history: [],
     usedPairs: [],
     createdAt: now,
     updatedAt: now,
@@ -219,6 +218,7 @@ function startGame(room: Room, playerId: string): ActionResult {
     eliminated: [],
     clueOrder: [],
     clues: {},
+    clueHistory: [],
     ready: [],
     votes: [],
     voteCandidates: null,
@@ -239,15 +239,6 @@ function startGame(room: Room, playerId: string): ActionResult {
 function newRound(room: Room, playerId: string): ActionResult {
   if (room.hostId !== playerId) return fail('Seul le host peut lancer une nouvelle manche.');
   if (room.phase !== 'GAME_OVER') return fail('La manche n’est pas terminée.');
-  const game = room.game;
-  if (game) {
-    room.history.push({
-      round: room.round,
-      themeLabel: game.themeLabel,
-      civilianWord: game.civilianWord,
-      undercoverWord: game.undercoverWord,
-    });
-  }
   room.players = room.players.filter((player) => !player.left);
   room.game = null;
   room.round += 1;
@@ -335,6 +326,14 @@ function eliminateDeparture(room: Room, playerId: string) {
 }
 
 function newTurn(room: Room) {
+  const game = room.game;
+  // Archive les indices du tour qui se termine (beginClues() vide `clues` juste après) : déjà
+  // publics au moment où ils ont été donnés, on les garde pour la discussion du tour suivant.
+  if (game) {
+    for (const [playerId, clue] of Object.entries(game.clues)) {
+      game.clueHistory.push({ turn: room.turn, playerId, text: clue.text, skipped: clue.skipped });
+    }
+  }
   room.turn += 1;
   beginClues(room);
 }

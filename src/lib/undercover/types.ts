@@ -135,6 +135,13 @@ export interface ClueEntry {
   skipped: boolean;
 }
 
+export interface PastClue {
+  turn: number;
+  playerId: string;
+  text: string;
+  skipped: boolean;
+}
+
 export interface GameData {
   themeLabel: string;
   civilianWord: string;
@@ -144,6 +151,9 @@ export interface GameData {
   eliminated: EliminatedEntry[];
   clueOrder: string[];
   clues: Record<string, ClueEntry>;
+  /** Indices des tours précédents de CETTE manche (remis à zéro à chaque nouvelle manche) :
+   *  déjà publics au moment où ils ont été donnés, jamais un secret. */
+  clueHistory: PastClue[];
   ready: string[];
   votes: Vote[];
   /** null = tous les joueurs en vie sont éligibles */
@@ -162,16 +172,6 @@ export interface GameData {
   roundScores: Record<string, number>;
 }
 
-/** Les deux mots d'une manche déjà terminée : déjà révélés à tous en fin de manche (GAME_OVER),
- *  donc sans risque à garder visibles ensuite — utile pour se souvenir des mots précédents
- *  pendant la discussion d'une manche suivante. */
-export interface PastRound {
-  round: number;
-  themeLabel: string;
-  civilianWord: string;
-  undercoverWord: string;
-}
-
 export interface Room {
   code: string;
   hostId: string;
@@ -184,8 +184,6 @@ export interface Room {
   revision: number;
   scores: Record<string, number>;
   game: GameData | null;
-  /** Manches précédentes de cette room (mots déjà révélés) */
-  history: PastRound[];
   /** Paires déjà jouées dans cette room (évite les répétitions) */
   usedPairs: string[];
   createdAt: number;
@@ -250,8 +248,8 @@ export interface PublicRoom {
   /** Révélé uniquement en GAME_OVER */
   reveal: { civilianWord: string; undercoverWord: string; roles: Record<string, Role> } | null;
   roundScores: Record<string, number>;
-  /** Manches précédentes de cette room (mots déjà révélés en leur temps) */
-  history: PastRound[];
+  /** Indices des tours précédents de la manche en cours (déjà publics quand ils ont été donnés) */
+  clueHistory: PastClue[];
 }
 
 export interface PrivateView {

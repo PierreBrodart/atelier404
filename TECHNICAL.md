@@ -196,9 +196,10 @@ partie reste en CLUES (discussion libre) jusqu'à ce que le host envoie l'action
   ne sont plus strictement plus nombreux qu'eux ; Mr White éliminé peut deviner le mot (insensible à la casse, aux
   accents et à la ponctuation) et gagne s'il le trouve.
 - **Scores** : `src/lib/undercover/scoring.ts` (Civil gagnant 2, Undercover gagnant 10, Mr White gagnant 6).
-- **Historique** : `room.history` garde le thème + les deux mots de chaque manche terminée de la room (déjà
-  révélés à tous en fin de manche, donc publics sans risque) — affiché, repliable, pendant les indices et le vote
-  des manches suivantes (`components/undercover/parts.tsx` → `PastRounds`).
+- **Indices des tours précédents** : au sein d'une même manche, `game.clueHistory` garde les indices des tours
+  déjà joués (remis à zéro à chaque nouvelle manche, avec `game.clues`) — déjà publics au moment où ils ont été
+  donnés, donc sans risque à republier. Affiché, repliable, **uniquement pendant le vote** (pas pendant les
+  indices, où seul le tour en cours compte) : `components/undercover/parts.tsx` → `ClueHistory`.
 
 ### Confidentialité
 

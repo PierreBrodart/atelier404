@@ -4,7 +4,7 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { cx } from '@/lib/cx';
 import { gsap } from '@/lib/gsap';
 import { ROLE_LABELS } from '@/lib/undercover/rules';
-import type { ClientAction, PastRound, PublicPlayer, Role, RoomView } from '@/lib/undercover/types';
+import type { ClientAction, PastClue, PublicPlayer, Role, RoomView } from '@/lib/undercover/types';
 import { usePrefersReducedMotion } from '@/lib/useReducedMotion';
 import { Split } from '../ui/Split';
 
@@ -268,25 +268,32 @@ export function Confetti() {
   );
 }
 
-// ——— Mots des manches précédentes ——————————————————————————————————
+// ——— Indices des tours précédents (manche en cours) ——————————————————————
 
-/** Déjà révélés à tous en fin de manche : sans risque à rappeler pendant la discussion suivante. */
-export function PastRounds({ history }: { history: PastRound[] }) {
+/** Déjà publics au moment où ils ont été donnés : sans risque à rappeler pendant le vote. */
+export function ClueHistory({ history, players }: { history: PastClue[]; players: PublicPlayer[] }) {
   if (history.length === 0) return null;
+  const nameOf = (id: string) => players.find((player) => player.id === id)?.name ?? '?';
+  const turns = [...new Set(history.map((entry) => entry.turn))].sort((a, b) => a - b);
+
   return (
     <details className="uc-history" data-enter>
-      <summary>Mots des manches précédentes ({history.length})</summary>
-      <ul className="uc-history__list">
-        {history.map((entry) => (
-          <li key={entry.round}>
-            <span className="uc-history__round">Manche {entry.round}</span>
-            <span className="uc-history__theme">{entry.themeLabel}</span>
-            <span className="uc-history__words">
-              {entry.civilianWord} <span aria-hidden="true">/</span> <span className="sr-only">et</span> {entry.undercoverWord}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <summary>Indices des tours précédents ({turns.length})</summary>
+      {turns.map((turn) => (
+        <div key={turn} className="uc-history__turn">
+          <p className="uc-history__round">Tour {turn}</p>
+          <ul className="uc-recap">
+            {history
+              .filter((entry) => entry.turn === turn)
+              .map((entry, index) => (
+                <li key={`${entry.playerId}-${index}`}>
+                  <strong>{nameOf(entry.playerId)}</strong>
+                  <span>{entry.skipped ? 'a passé son tour' : entry.text ? `« ${entry.text} »` : 'indice donné à l’oral'}</span>
+                </li>
+              ))}
+          </ul>
+        </div>
+      ))}
     </details>
   );
 }
