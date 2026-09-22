@@ -1,0 +1,828 @@
+@use '../abstracts' as *;
+
+// Module Kahoot : extension du système visuel d'Atelier 404, chargée uniquement sur
+// /kahoot (voir app/kahoot/layout.tsx). Reprend le vocabulaire d'Undercover (cartes papier,
+// contour encre, ombre portée plate) sous un préfixe `kh-` indépendant : les deux mini-jeux
+// ne partagent pas de CSS pour rester modifiables séparément.
+
+// ——— Éléments communs (équivalents de .uc-head__title / .uc-hint / .uc-actions…) ———————
+
+.kh-title {
+  @include display(clamp(2.2rem, 1rem + 5vw, 5.5rem));
+  max-width: 18ch;
+}
+
+.kh-hint {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+
+  [data-editor-shell] & {
+    color: inherit;
+    opacity: 0.8;
+  }
+}
+
+.kh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.kh-link-button {
+  padding: 0.35rem 0;
+  min-height: 2.75rem;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 100% 2px no-repeat;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: background-size 0.3s var(--ease-out);
+
+  &:hover,
+  &:focus-visible {
+    background-size: 0% 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-size: 0% 2px;
+  }
+}
+
+.kh-tag {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+// ——— Page publique : /kahoot ————————————————————————————————————————
+
+.kh-section {
+  padding-bottom: clamp(2rem, 5vw, 4rem);
+}
+
+.kh-tabs {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+  padding: 0.35rem;
+  background: var(--paper-deep);
+  border: var(--border);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+.kh-tab {
+  padding: 0.65rem 1.4rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  transition: background-color 0.25s, color 0.25s;
+
+  &[aria-selected='true'] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  &:not([aria-selected='true']):hover,
+  &:not([aria-selected='true']):focus-visible {
+    background: rgba(22, 19, 59, 0.08);
+  }
+}
+
+.kh-empty {
+  padding: 2rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+}
+
+.kh-soon {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+  max-width: 40rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: var(--paper);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+
+  &__badge {
+    padding: 0.2rem 0.75rem;
+    background: var(--sun);
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+}
+
+// ——— Cartes de Kahoot (liste publique + tableau de bord) ————————————————
+
+.kh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: clamp(1.25rem, 3vw, 2rem);
+}
+
+.kh-card {
+  &__frame {
+    display: grid;
+    gap: 0.6rem;
+    align-content: start;
+    height: 100%;
+    padding: clamp(1.1rem, 3vw, 1.5rem);
+    background: var(--card-bg);
+    color: var(--card-fg);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 7px 7px 0 var(--ink);
+    transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+
+    &:hover,
+    &:focus-within {
+      transform: translate(-4px, -4px);
+      box-shadow: 11px 11px 0 var(--ink);
+    }
+  }
+
+  &__meta {
+    @include mono-label;
+    opacity: 0.85;
+  }
+
+  &__title {
+    @include display(clamp(1.5rem, 1rem + 1.5vw, 2.1rem));
+    line-height: 1.05;
+  }
+
+  &__desc {
+    max-width: 32ch;
+    font-size: 0.95rem;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-top: 0.5rem;
+
+    .btn {
+      --btn-bg: var(--paper);
+      --btn-fg: var(--ink);
+      --btn-hover-bg: var(--ink);
+      --btn-hover-fg: var(--paper);
+      border-color: var(--ink);
+    }
+
+    .kh-link-button {
+      color: inherit;
+    }
+  }
+}
+
+// ——— Coquille éditeur / tableau de bord (URL secrète) ———————————————————
+
+.kh-editor-page {
+  min-height: 100svh;
+  padding-top: calc(var(--header-h) + clamp(1.5rem, 4vw, 2.5rem));
+  padding-bottom: clamp(3rem, 8vw, 6rem);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.kh-dashboard,
+.kh-editor {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.kh-dashboard {
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+
+    .btn {
+      --btn-bg: var(--sun);
+      --btn-fg: var(--ink);
+    }
+  }
+}
+
+.kh-editor {
+  &__head {
+    display: grid;
+    gap: 0.75rem;
+
+    .btn {
+      justify-self: start;
+      --btn-bg: transparent;
+      --btn-fg: var(--paper);
+      box-shadow: none;
+      border-color: var(--paper);
+    }
+  }
+
+  &__section {
+    display: grid;
+    gap: 1.1rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+  }
+
+  &__section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  &__section-title {
+    @include display(clamp(1.3rem, 1rem + 1vw, 1.8rem));
+  }
+
+  &__actions {
+    .btn {
+      --btn-bg: var(--sun);
+      --btn-fg: var(--ink);
+    }
+  }
+
+  &--preview {
+    display: block;
+  }
+
+  &__preview-tag {
+    display: inline-block;
+    margin-bottom: 1rem;
+    padding: 0.3rem 0.9rem;
+    background: var(--sun);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.85rem;
+  }
+}
+
+// Couleur d'accent choisie pour le Kahoot en cours d'édition
+.kh-accents {
+  &__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
+
+.kh-accent {
+  position: relative;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  &__swatch {
+    display: block;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--swatch);
+    border: var(--border);
+    border-radius: 50%;
+    transition: transform 0.25s var(--ease-out), box-shadow 0.25s;
+  }
+
+  input:checked + &__swatch {
+    box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
+  }
+
+  input:focus-visible + &__swatch {
+    outline: 3px dashed var(--ink);
+    outline-offset: 3px;
+  }
+
+  &:hover &__swatch {
+    transform: translateY(-2px);
+  }
+}
+
+// ——— Liste de questions (éditeur) ————————————————————————————————————
+
+.kh-questions {
+  display: grid;
+  gap: 1rem;
+}
+
+.kh-question {
+  background: var(--paper-deep);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--ink);
+
+  &[data-expanded='true'] {
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  &__handle {
+    cursor: grab;
+    padding: 0.5rem;
+    font-size: 1.2rem;
+    color: var(--ink-soft);
+    touch-action: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &__summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+    padding: 0.4rem;
+    text-align: left;
+  }
+
+  &__index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    flex-shrink: 0;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  &__title {
+    overflow: hidden;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  &__body {
+    display: grid;
+    gap: 1.25rem;
+    padding: 0 1.1rem 1.25rem;
+    border-top: 2px dashed var(--ink);
+    padding-top: 1.1rem;
+  }
+}
+
+.kh-qfields {
+  display: grid;
+  gap: 1rem;
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 1rem;
+
+    &--wrap {
+      grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    }
+  }
+}
+
+.kh-answers {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.kh-answer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  &__check input {
+    width: 1.5rem;
+    height: 1.5rem;
+    accent-color: var(--ink);
+  }
+
+  &__text {
+    flex: 1;
+    padding: 0.6rem 0.85rem;
+    background: #fffaf0;
+    border: var(--border);
+    border-radius: 0.6rem;
+  }
+}
+
+// ——— Carte (édition et jeu) ————————————————————————————————————————
+
+.kh-map {
+  height: 20rem;
+  overflow: hidden;
+  background: var(--paper);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--ink);
+
+  .leaflet-container {
+    height: 100%;
+    font-family: var(--font-mono);
+  }
+
+  .leaflet-control-attribution {
+    font-size: 0.65rem;
+  }
+}
+
+.kh-map-loading {
+  display: grid;
+  place-items: center;
+  height: 20rem;
+  background: var(--paper);
+  border: var(--border);
+  border-radius: var(--radius);
+}
+
+.kh-mapfields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+// Marqueur custom (voir components/kahoot/MapPicker.tsx) : pastille encre + accent, pas de PNG.
+.kh-map-pin span {
+  display: block;
+  width: 26px;
+  height: 26px;
+  background: var(--pin-color, var(--accent));
+  border: 3px solid var(--ink);
+  border-radius: 50% 50% 50% 0;
+  rotate: -45deg;
+  box-shadow: 2px 2px 0 rgba(22, 19, 59, 0.4);
+}
+
+// ——— Jeu ——————————————————————————————————————————————————————
+
+.kh-play-page {
+  min-height: 100svh;
+  padding-top: calc(var(--header-h) + clamp(1rem, 3vw, 2rem));
+  padding-bottom: clamp(3rem, 8vw, 6rem);
+  background: var(--accent);
+  color: var(--on-accent);
+  transition: background-color 0.6s var(--ease-out), color 0.4s;
+
+  &__inner {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  &__top .btn {
+    --btn-bg: transparent;
+    --btn-fg: var(--on-accent);
+    box-shadow: none;
+    border-color: currentColor;
+  }
+}
+
+.kh-play {
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  max-width: 48rem;
+
+  &--intro,
+  &--results {
+    justify-items: start;
+  }
+
+  &__desc {
+    max-width: 44ch;
+    font-size: var(--fs-lead);
+  }
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  &__progress {
+    @include mono-label;
+  }
+
+  &__image {
+    width: 100%;
+    max-height: 18rem;
+    object-fit: cover;
+    border: var(--border);
+    border-radius: var(--radius);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  &__question {
+    max-width: 28ch;
+  }
+
+  &__score {
+    @include display(clamp(2.5rem, 1rem + 6vw, 5rem));
+
+    span {
+      font-size: 1.2rem;
+      font-weight: 700;
+      opacity: 0.75;
+    }
+  }
+}
+
+.kh-timer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 8rem;
+
+  &__bar {
+    flex: 1;
+    height: 0.6rem;
+    background: var(--ink);
+    border-radius: 999px;
+    transform-origin: left;
+    transition: transform 0.15s linear;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(22, 19, 59, 0.15);
+      border-radius: 999px;
+      z-index: -1;
+    }
+  }
+
+  &__value {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.kh-choices {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.kh-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--ink);
+  font-weight: 700;
+  text-align: left;
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &[data-tone='0'] {
+    --choice-tone: var(--tomato);
+  }
+  &[data-tone='1'] {
+    --choice-tone: var(--blue);
+  }
+  &[data-tone='2'] {
+    --choice-tone: var(--sun);
+  }
+  &[data-tone='3'] {
+    --choice-tone: var(--mint);
+  }
+
+  &__letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    flex-shrink: 0;
+    background: var(--choice-tone, var(--sun));
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    font-family: var(--font-mono);
+  }
+
+  &__text {
+    flex: 1;
+  }
+
+  &__mark {
+    flex-shrink: 0;
+    font-size: 1.2rem;
+  }
+
+  &[data-selected='true'] {
+    background: var(--ink);
+    color: var(--paper);
+
+    .kh-choice__letter {
+      border-color: var(--paper);
+    }
+  }
+
+  &[data-correct='true'] {
+    background: var(--mint);
+    color: var(--ink);
+  }
+
+  &[data-wrong='true'] {
+    background: var(--tomato);
+    color: var(--paper);
+  }
+}
+
+.kh-slider {
+  display: grid;
+  gap: 0.6rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+
+  &__value {
+    @include display(clamp(2rem, 1rem + 3vw, 3rem));
+    justify-self: center;
+  }
+
+  input[type='range'] {
+    width: 100%;
+    accent-color: var(--tomato);
+  }
+
+  &__scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+
+  &__reveal {
+    position: relative;
+    height: 1.5rem;
+  }
+
+  &__marker {
+    position: absolute;
+    top: 0;
+    width: 0.9rem;
+    height: 0.9rem;
+    translate: -50% 0;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+
+    &--correct {
+      background: var(--mint);
+    }
+
+    &--mine {
+      background: var(--tomato);
+    }
+  }
+
+  &__answer {
+    font-weight: 700;
+  }
+}
+
+.kh-reveal {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+  padding: clamp(1.1rem, 3vw, 1.75rem);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+
+  &__score {
+    font-size: 1.3rem;
+    font-weight: 800;
+
+    &[data-correct='true'] {
+      color: #0a7a4e;
+    }
+  }
+
+  &__explanation {
+    max-width: 48ch;
+  }
+
+  &__source {
+    font-size: 0.9rem;
+
+    a {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+  }
+}
+
+.kh-results {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 36rem;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: 0.6rem;
+  }
+
+  &__q {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__score {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+
+  li[data-correct='true'] &__score {
+    color: #0a7a4e;
+  }
+}
+
+@include down(md) {
+  .kh-qfields__row {
+    grid-template-columns: 1fr;
+  }
+
+  .kh-question__actions {
+    flex-basis: 100%;
+  }
+}

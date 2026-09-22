@@ -8,12 +8,12 @@ import type { TeamMember } from './types';
 export const team: TeamMember[] = [
   {
     id: 'camille',
-    name: 'Camille Provisoire',
+    name: 'Jules Crevoisier',
     role: 'Direction artistique & design',
-    bio: "Description définitive à venir. En attendant : Camille dessine des interfaces qui ont de l'allure, choisit les couleurs et défend les marges avec passion.",
+    bio: "Je travaille par passion, mais à condition d'avoir au moins 50 ias",
     funFact: { label: 'Outil préféré', value: 'Un feutre qui bave' },
     photo: {
-      src: '/images/equipe/camille.jpg',
+      src: '/images/equipe/jules.jpg',
       alt: 'Portrait souriant de Camille, directrice artistique (photo provisoire)',
       width: 900,
       height: 1350,
@@ -23,12 +23,12 @@ export const team: TeamMember[] = [
   },
   {
     id: 'yanis',
-    name: 'Yanis Provisoire',
+    name: 'Jordan Septier',
     role: 'Développeur créatif (WebGL)',
-    bio: "Description définitive à venir. En attendant : Yanis fait tourner des objets 3D dans le navigateur et jure que « ça ne coûte presque rien en performance ».",
+    bio: " Hmm je scouby travaille.",
     funFact: { label: 'Bug préféré', value: 'Celui qui disparaît quand on le montre' },
     photo: {
-      src: '/images/equipe/yanis.jpg',
+      src: '/images/equipe/jordan.jpg',
       alt: 'Portrait souriant de Yanis, développeur créatif (photo provisoire)',
       width: 900,
       height: 1350,
@@ -38,12 +38,12 @@ export const team: TeamMember[] = [
   },
   {
     id: 'nina',
-    name: 'Nina Provisoire',
+    name: 'Pierre Mon Bro-dart',
     role: 'Cheffe de projet & développement',
-    bio: "Description définitive à venir. En attendant : Nina orchestre les plannings, traduit « faites-moi un truc dingue » en spécifications et garde tout le monde de bonne humeur.",
+    bio: "Je sais pas ce que je fais là mdr",
     funFact: { label: 'Superpouvoir', value: 'Dire non avec le sourire' },
     photo: {
-      src: '/images/equipe/nina.jpg',
+      src: '/images/equipe/pierre.jpg',
       alt: 'Nina travaillant sur son ordinateur portable (photo provisoire)',
       width: 900,
       height: 601,

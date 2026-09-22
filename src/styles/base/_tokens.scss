@@ -78,3 +78,7 @@
   --accent: var(--pink);
   --on-accent: var(--ink);
 }
+[data-accent='ink'] {
+  --accent: var(--ink);
+  --on-accent: var(--paper);
+}

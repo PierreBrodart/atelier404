@@ -5,7 +5,9 @@ import { BASE_PATH } from '@/lib/basePath';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  const pages = ['', ...navigation.map((item) => item.href), '/undercover'];
+  // Ni la room Undercover en cours ni un Kahoot précis (contenu dynamique, sans valeur SEO
+  // individuelle) : seules les pages d'entrée sont listées, comme /undercover.
+  const pages = ['', ...navigation.map((item) => item.href), '/undercover', '/kahoot'];
 
   return [
     ...pages.map((path) => ({

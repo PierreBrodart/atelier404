@@ -4,11 +4,13 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 /**
- * Ne rend pas `children` sur `prefix` et ses sous-pages (ex. `/undercover`, `/undercover/ABCD`).
- * Sert à retirer un élément du layout racine (le footer) sur une section du site.
+ * Ne rend pas `children` sur `prefix` (ou l'un de `prefixes`) et ses sous-pages
+ * (ex. `/undercover`, `/undercover/ABCD`). Sert à retirer un élément du layout racine
+ * (le footer) sur une section du site.
  */
-export function HideOnRoute({ prefix, children }: { prefix: string; children: ReactNode }) {
+export function HideOnRoute({ prefix, prefixes, children }: { prefix?: string; prefixes?: string[]; children: ReactNode }) {
   const pathname = usePathname();
-  if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return null;
-  return children;
+  const list = prefixes ?? (prefix ? [prefix] : []);
+  const hidden = list.some((item) => pathname === item || pathname.startsWith(`${item}/`));
+  return hidden ? null : children;
 }

@@ -61,6 +61,11 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
+# Données du module Kahoot (un fichier JSON par quiz) : à monter en volume en production
+# (voir docker-compose.yml) pour survivre aux redéploiements. Créé ici avec les bons droits
+# pour que le premier lancement fonctionne même sans volume (données alors éphémères).
+RUN mkdir -p ./data/kahoot/manual && chown -R node:node ./data
+
 USER node
 EXPOSE 3000
 

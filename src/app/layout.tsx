@@ -73,7 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           {/* Pas de footer pendant le jeu : la partie tient sur un écran de téléphone. */}
-          <HideOnRoute prefix="/undercover">
+          <HideOnRoute prefixes={['/undercover', '/kahoot']}>
             <Footer />
           </HideOnRoute>
         </TransitionProvider>
