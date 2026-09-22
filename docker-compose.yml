@@ -21,7 +21,7 @@ services:
         NEXT_PUBLIC_FORM_ENDPOINT: ${NEXT_PUBLIC_FORM_ENDPOINT:-}
     restart: unless-stopped
     ports:
-      - '3000:3000'
+      - '3001:3000'
     environment:
       PORT: '3000'
       HOSTNAME: '0.0.0.0'
