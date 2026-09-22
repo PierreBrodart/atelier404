@@ -80,6 +80,7 @@ export function createRoom(code: string, host: ServerPlayer): Room {
     revision: 0,
     scores: { [host.id]: 0 },
     game: null,
+    history: [],
     usedPairs: [],
     createdAt: now,
     updatedAt: now,
@@ -238,6 +239,15 @@ function startGame(room: Room, playerId: string): ActionResult {
 function newRound(room: Room, playerId: string): ActionResult {
   if (room.hostId !== playerId) return fail('Seul le host peut lancer une nouvelle manche.');
   if (room.phase !== 'GAME_OVER') return fail('La manche n’est pas terminée.');
+  const game = room.game;
+  if (game) {
+    room.history.push({
+      round: room.round,
+      themeLabel: game.themeLabel,
+      civilianWord: game.civilianWord,
+      undercoverWord: game.undercoverWord,
+    });
+  }
   room.players = room.players.filter((player) => !player.left);
   room.game = null;
   room.round += 1;

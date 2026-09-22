@@ -162,6 +162,16 @@ export interface GameData {
   roundScores: Record<string, number>;
 }
 
+/** Les deux mots d'une manche déjà terminée : déjà révélés à tous en fin de manche (GAME_OVER),
+ *  donc sans risque à garder visibles ensuite — utile pour se souvenir des mots précédents
+ *  pendant la discussion d'une manche suivante. */
+export interface PastRound {
+  round: number;
+  themeLabel: string;
+  civilianWord: string;
+  undercoverWord: string;
+}
+
 export interface Room {
   code: string;
   hostId: string;
@@ -174,6 +184,8 @@ export interface Room {
   revision: number;
   scores: Record<string, number>;
   game: GameData | null;
+  /** Manches précédentes de cette room (mots déjà révélés) */
+  history: PastRound[];
   /** Paires déjà jouées dans cette room (évite les répétitions) */
   usedPairs: string[];
   createdAt: number;
@@ -238,6 +250,8 @@ export interface PublicRoom {
   /** Révélé uniquement en GAME_OVER */
   reveal: { civilianWord: string; undercoverWord: string; roles: Record<string, Role> } | null;
   roundScores: Record<string, number>;
+  /** Manches précédentes de cette room (mots déjà révélés en leur temps) */
+  history: PastRound[];
 }
 
 export interface PrivateView {

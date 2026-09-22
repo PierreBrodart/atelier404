@@ -4,7 +4,7 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { cx } from '@/lib/cx';
 import { gsap } from '@/lib/gsap';
 import { ROLE_LABELS } from '@/lib/undercover/rules';
-import type { ClientAction, PublicPlayer, Role, RoomView } from '@/lib/undercover/types';
+import type { ClientAction, PastRound, PublicPlayer, Role, RoomView } from '@/lib/undercover/types';
 import { usePrefersReducedMotion } from '@/lib/useReducedMotion';
 import { Split } from '../ui/Split';
 
@@ -265,6 +265,29 @@ export function Confetti() {
         />
       ))}
     </div>
+  );
+}
+
+// ——— Mots des manches précédentes ——————————————————————————————————
+
+/** Déjà révélés à tous en fin de manche : sans risque à rappeler pendant la discussion suivante. */
+export function PastRounds({ history }: { history: PastRound[] }) {
+  if (history.length === 0) return null;
+  return (
+    <details className="uc-history" data-enter>
+      <summary>Mots des manches précédentes ({history.length})</summary>
+      <ul className="uc-history__list">
+        {history.map((entry) => (
+          <li key={entry.round}>
+            <span className="uc-history__round">Manche {entry.round}</span>
+            <span className="uc-history__theme">{entry.themeLabel}</span>
+            <span className="uc-history__words">
+              {entry.civilianWord} <span aria-hidden="true">/</span> <span className="sr-only">et</span> {entry.undercoverWord}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 

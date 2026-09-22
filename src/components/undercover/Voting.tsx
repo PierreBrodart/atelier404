@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { SKIP_VOTE } from '@/lib/undercover/rules';
 import { Button } from '../ui/Button';
-import { HostForce, PhaseHead, PlayerChip, StatusMark, type ScreenProps } from './parts';
+import { HostForce, PastRounds, PhaseHead, PlayerChip, StatusMark, type ScreenProps } from './parts';
 
 /** Vote secret : un joueur, une voix (ou « Passer »), pas de retour en arrière. */
 export function Voting({ view, act }: ScreenProps) {
@@ -53,6 +53,8 @@ export function Voting({ view, act }: ScreenProps) {
           </ul>
         </section>
       )}
+
+      <PastRounds history={room.history} />
 
       {self?.alive && !voted && (
         <form className="uc-card" onSubmit={submit} data-enter>

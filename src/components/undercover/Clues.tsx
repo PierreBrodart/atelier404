@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { Button } from '../ui/Button';
-import { HostForce, PhaseHead, PlayerChip, StatusMark, type ScreenProps } from './parts';
+import { HostForce, PastRounds, PhaseHead, PlayerChip, StatusMark, type ScreenProps } from './parts';
 
 /** Les indices se donnent chacun son tour, dans un ordre tiré au sort. */
 export function Clues({ view, act }: ScreenProps) {
@@ -57,6 +57,8 @@ export function Clues({ view, act }: ScreenProps) {
           })}
         </ol>
       </section>
+
+      <PastRounds history={room.history} />
 
       {myTurn && (
         <form className="uc-card uc-card--turn" onSubmit={submit} data-enter>

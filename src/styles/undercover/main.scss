@@ -998,6 +998,72 @@
   }
 }
 
+// Mots des manches précédentes (repliable) : déjà révélés à tous, rappel pendant la discussion.
+.uc-history {
+  padding: clamp(1rem, 3vw, 1.5rem);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--ink);
+
+  summary {
+    cursor: pointer;
+    font-weight: 800;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: '▸';
+      display: inline-block;
+      margin-right: 0.6rem;
+      transition: transform 0.25s var(--ease-out);
+    }
+
+    &:focus-visible {
+      outline: 3px dashed var(--ink);
+      outline-offset: 0.3em;
+    }
+  }
+
+  &[open] summary::before {
+    transform: rotate(90deg);
+  }
+
+  &__list {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.3rem 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 2px dashed var(--ink);
+    }
+  }
+
+  &__round {
+    font-weight: 800;
+  }
+
+  &__theme {
+    @include mono-label;
+    opacity: 0.75;
+  }
+
+  &__words {
+    font-weight: 700;
+  }
+}
+
 .uc-vote {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));

@@ -109,6 +109,7 @@ function publicRoom(room: Room): PublicRoom {
           }
         : null,
     roundScores: gameOver && game ? { ...game.roundScores } : {},
+    history: room.history.map((entry) => ({ ...entry })),
   };
 }
 

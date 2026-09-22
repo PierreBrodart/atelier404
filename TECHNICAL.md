@@ -181,17 +181,24 @@ GAME_OVER → LOBBY (nouvelle manche : room, joueurs et scores conservés)
 
 Toutes les transitions sont décidées **par le serveur** et diffusées à tous ; le client ne calcule rien de
 « vrai ». `reconcile()` fait avancer la phase dès que tous les joueurs **présents** ont agi (aucun blocage si
-quelqu'un est absent).
+quelqu'un est absent) — **sauf CLUES → VOTING**, volontairement manuelle : une fois le dernier indice donné, la
+partie reste en CLUES (discussion libre) jusqu'à ce que le host envoie l'action `startVote`.
 
 - **Composition** : au moins 3 joueurs (10 max) ; au moins un imposteur ; au moins 2 civils ; civils strictement plus
   nombreux que les imposteurs. Toute demande incohérente est corrigée : le compteur modifié par le host est conservé,
   l'autre s'ajuste.
-- **Égalité** : re-vote restreint aux ex æquo ; jusqu'à 3 votes ; si l'égalité persiste, aucune élimination et
-  nouveau tour d'indices ; 3 tours sans élimination → victoire des imposteurs.
+- **Vote** : contre un joueur, ou « Passer » (`SKIP_VOTE` dans `rules.ts`) pour n'éliminer personne ce tour-ci —
+  compte comme un vote normal dans le dépouillement, jamais comme cible éligible à l'élimination.
+- **Égalité** : re-vote restreint aux ex æquo (« Passer » reste toujours proposable) ; jusqu'à 3 votes ; si
+  l'égalité persiste, aucune élimination et nouveau tour d'indices ; 3 tours sans élimination → victoire des
+  imposteurs (un vote « Passer » majoritaire compte comme une absence d'élimination, donc alimente ce compteur).
 - **Victoire** : les Civils gagnent quand tous les imposteurs sont éliminés ; les imposteurs gagnent quand les civils
   ne sont plus strictement plus nombreux qu'eux ; Mr White éliminé peut deviner le mot (insensible à la casse, aux
   accents et à la ponctuation) et gagne s'il le trouve.
 - **Scores** : `src/lib/undercover/scoring.ts` (Civil gagnant 2, Undercover gagnant 10, Mr White gagnant 6).
+- **Historique** : `room.history` garde le thème + les deux mots de chaque manche terminée de la room (déjà
+  révélés à tous en fin de manche, donc publics sans risque) — affiché, repliable, pendant les indices et le vote
+  des manches suivantes (`components/undercover/parts.tsx` → `PastRounds`).
 
 ### Confidentialité
 
