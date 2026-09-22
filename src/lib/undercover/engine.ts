@@ -19,9 +19,9 @@ import type {
  * Il modifie un `Room` en mémoire et retourne un résultat. La synchronisation
  * (SSE, présence) est dans `store.ts`, la projection publique/privée dans `view.ts`.
  *
- *  LOBBY → REVEAL → CLUES → DISCUSSION → VOTING → RESULT → ELIMINATION → (CLUES | GAME_OVER)
- *                                          ↑         │ égalité
- *                                          └─────────┘ (re-vote entre les ex æquo)
+ *  LOBBY → REVEAL → CLUES → VOTING → RESULT → ELIMINATION → (CLUES | GAME_OVER)
+ *                              ↑         │ égalité
+ *                              └─────────┘ (re-vote entre les ex æquo)
  *  GAME_OVER → LOBBY (nouvelle manche : la room, les joueurs et les scores sont conservés)
  */
 
@@ -456,7 +456,6 @@ function force(room: Room, playerId: string): ActionResult {
 
   switch (room.phase) {
     case 'REVEAL':
-    case 'DISCUSSION':
       game.ready = [...game.alive];
       break;
     case 'CLUES': {
@@ -505,7 +504,7 @@ export function applyAction(room: Room, playerId: string, action: ClientAction):
       return OK;
 
     case 'ready': {
-      if (!game || (room.phase !== 'REVEAL' && room.phase !== 'DISCUSSION')) return fail('Rien à valider maintenant.');
+      if (!game || room.phase !== 'REVEAL') return fail('Rien à valider maintenant.');
       if (!alive) return fail('Tu es éliminé : tu observes.');
       if (!game.ready.includes(playerId)) game.ready.push(playerId);
       touch(room);
@@ -570,20 +569,11 @@ function step(room: Room): boolean {
     case 'CLUES': {
       const speaker = currentSpeaker(room);
       if (!speaker) {
-        game.ready = [];
-        touch(room, 'DISCUSSION');
+        beginVoting(room, null, 1);
         return true;
       }
       if (isAbsent(room, speaker)) {
         game.clues[speaker] = { text: '', skipped: true };
-        return true;
-      }
-      return false;
-    }
-    case 'DISCUSSION': {
-      const waiting = game.alive.filter((id) => !game.ready.includes(id) && !isAbsent(room, id));
-      if (waiting.length === 0 && hasPresentPlayer(room)) {
-        beginVoting(room, null, 1);
         return true;
       }
       return false;

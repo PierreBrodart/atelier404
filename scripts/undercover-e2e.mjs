@@ -112,7 +112,7 @@ async function toPhase(clients, phase, timeout = 5000) {
   return waitFor(() => phaseIs(clients, phase), `phase ${phase}`, timeout);
 }
 
-/** Joue REVEAL → CLUES → DISCUSSION → VOTING avec des actions valides. */
+/** Joue REVEAL → CLUES → VOTING avec des actions valides. */
 async function playUntilVoting(clients, order = clients) {
   await toPhase(clients, 'REVEAL');
   for (const client of order) await client.act({ type: 'ready' });
@@ -126,7 +126,7 @@ async function playUntilVoting(clients, order = clients) {
   await cluesToVoting(clients);
 }
 
-/** CLUES → DISCUSSION → VOTING (tous les joueurs en vie jouent leur tour). */
+/** CLUES → VOTING (tous les joueurs en vie jouent leur tour). */
 async function cluesToVoting(clients) {
   await toPhase(clients, 'CLUES');
   for (let guard = 0; guard < 12 && clients[0].room.phase === 'CLUES'; guard += 1) {
@@ -137,9 +137,6 @@ async function cluesToVoting(clients) {
     check(res.ok, `indice de ${speaker.name}`);
     await waitFor(() => clients[0].room.currentSpeakerId !== id || clients[0].room.phase !== 'CLUES', 'tour suivant');
   }
-  await toPhase(clients, 'DISCUSSION');
-  const alive = clients.filter((c) => c.room.players.find((p) => p.id === c.playerId).alive);
-  for (const client of alive) await client.act({ type: 'ready' });
   await toPhase(clients, 'VOTING');
 }
 
@@ -311,8 +308,6 @@ async function main() {
     await survivors.find((c) => c.playerId === id).act({ type: 'submitClue', text: '' });
     await waitFor(() => alice.room.currentSpeakerId !== id || alice.room.phase !== 'CLUES', 'orateur suivant');
   }
-  await toPhase(all, 'DISCUSSION');
-  for (const client of survivors) await client.act({ type: 'ready' });
   await toPhase(all, 'VOTING');
   const votes2 = {};
   for (const voter of survivors) votes2[voter.name] = voter === undercover ? civilians.find((c) => c !== voter).name : undercover.name;

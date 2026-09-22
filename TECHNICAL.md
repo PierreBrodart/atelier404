@@ -161,7 +161,7 @@ src/lib/undercover/
   store.ts                rooms, SSE, présence, transfert de host, nettoyage
   client.ts               hook `useRoom` (navigateur)
 src/app/api/undercover/   route.ts (POST) + stream/route.ts (SSE)
-src/components/undercover Lobby, RoleReveal, Clues, Discussion, Voting, VoteResult, Elimination, GameOver…
+src/components/undercover Lobby, RoleReveal, Clues, Voting, VoteResult, Elimination, GameOver…
 src/styles/undercover/    styles du jeu
 scripts/                  undercover-e2e.mjs (tests), undercover-bots.mjs (bots pour test manuel)
 ```
@@ -169,9 +169,9 @@ scripts/                  undercover-e2e.mjs (tests), undercover-bots.mjs (bots 
 ### Machine à états
 
 ```text
-LOBBY → REVEAL → CLUES → DISCUSSION → VOTING → RESULT → ELIMINATION → CLUES … ou GAME_OVER
-                                         ↑          │ égalité
-                                         └──────────┘ re-vote entre les ex æquo
+LOBBY → REVEAL → CLUES → VOTING → RESULT → ELIMINATION → CLUES … ou GAME_OVER
+                            ↑          │ égalité
+                            └──────────┘ re-vote entre les ex æquo
 GAME_OVER → LOBBY (nouvelle manche : room, joueurs et scores conservés)
 ```
 

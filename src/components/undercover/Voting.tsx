@@ -31,6 +31,27 @@ export function Voting({ view, act }: ScreenProps) {
         </p>
       </PhaseHead>
 
+      {room.clueOrder.length > 0 && (
+        <section className="uc-card" aria-labelledby="uc-recap-title" data-enter>
+          <h3 id="uc-recap-title" className="uc-card__title">
+            Indices donnés
+          </h3>
+          <ul className="uc-recap">
+            {room.clueOrder.map((id) => {
+              const clue = room.clues.find((entry) => entry.playerId === id);
+              if (!clue) return null;
+              const player = room.players.find((entry) => entry.id === id);
+              return (
+                <li key={id}>
+                  <strong>{player?.name}</strong>
+                  <span>{clue.skipped ? 'a passé son tour' : clue.text ? `« ${clue.text} »` : 'indice donné à l’oral'}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {self?.alive && !voted && (
         <form className="uc-card" onSubmit={submit} data-enter>
           <fieldset className="uc-fieldset">

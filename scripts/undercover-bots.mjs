@@ -76,7 +76,7 @@ if (command === 'step') {
       const v = await view(bot);
       const me = v.room.players.find((p) => p.id === v.me.playerId);
       if (v.room.phase !== phase) break;
-      if (phase === 'REVEAL' || phase === 'DISCUSSION') await act(bot, { type: 'ready' });
+      if (phase === 'REVEAL') await act(bot, { type: 'ready' });
       if (phase === 'CLUES' && v.room.currentSpeakerId === v.me.playerId) await act(bot, { type: 'submitClue', text: 'un indice malin' });
       if (phase === 'VOTING' && me.alive && !v.me.myVote) {
         const target = v.room.players.find((p) => p.name === voteName && p.alive && p.id !== me.id) ?? v.room.players.find((p) => p.alive && p.id !== me.id && (!v.room.voting.candidates || v.room.voting.candidates.includes(p.id)));

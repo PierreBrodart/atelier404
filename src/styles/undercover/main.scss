@@ -26,10 +26,6 @@
   &[data-phase='CLUES'] {
     --uc-bg: var(--mint);
   }
-  &[data-phase='DISCUSSION'] {
-    --uc-bg: var(--blue);
-    --uc-fg: var(--paper);
-  }
   &[data-phase='VOTING'] {
     --uc-bg: var(--tomato);
   }
@@ -52,7 +48,6 @@
   }
 
   // Sur fond sombre, les anneaux de focus passent en jaune
-  &[data-phase='DISCUSSION'],
   &[data-phase='RESULT'],
   &[data-phase='ELIMINATION'] {
     --focus: var(--sun);
@@ -966,7 +961,7 @@
   rotate: -2deg;
 }
 
-// ——— Indices, discussion, vote ————————————————————————————————
+// ——— Indices, vote ——————————————————————————————————————————
 
 .uc-recap {
   display: grid;

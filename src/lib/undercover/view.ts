@@ -61,7 +61,7 @@ function publicRoom(room: Room): PublicRoom {
     players: publicPlayers,
     limits: { min: LIMITS.minPlayers, max: LIMITS.maxPlayers },
     composition: { ...comp },
-    clueOrder: room.phase === 'CLUES' || room.phase === 'DISCUSSION' ? [...(game?.clueOrder ?? [])] : [],
+    clueOrder: room.phase === 'CLUES' || room.phase === 'VOTING' ? [...(game?.clueOrder ?? [])] : [],
     currentSpeakerId: currentSpeaker(room),
     clues: game
       ? Object.entries(game.clues).map(([playerId, clue]) => ({

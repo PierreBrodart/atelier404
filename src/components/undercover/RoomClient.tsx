@@ -8,7 +8,6 @@ import type { ClientAction, RoomView, ThemeInfo } from '@/lib/undercover/types';
 import { TLink } from '../layout/PageTransition';
 import { ButtonLink } from '../ui/Button';
 import { Clues } from './Clues';
-import { Discussion } from './Discussion';
 import { Elimination } from './Elimination';
 import { GameOver, WINNER_TITLES } from './GameOver';
 import { JoinGate } from './JoinGate';
@@ -32,8 +31,6 @@ function announcement(view: RoomView): string {
       return room.currentSpeakerId === me.playerId
         ? 'C’est à toi de donner ton indice.'
         : `${nameOf(room.currentSpeakerId)} donne son indice.`;
-    case 'DISCUSSION':
-      return 'Discussion : débattez, puis passez au vote.';
     case 'VOTING':
       return room.voting && room.voting.round > 1 ? 'Égalité. Nouveau vote entre les joueurs à égalité.' : 'Phase de vote.';
     case 'RESULT':
@@ -90,8 +87,6 @@ function PhaseScreen({ view, act, themes }: { view: RoomView; act: (action: Clie
       return <RoleReveal view={view} act={act} />;
     case 'CLUES':
       return <Clues view={view} act={act} />;
-    case 'DISCUSSION':
-      return <Discussion view={view} act={act} />;
     case 'VOTING':
       return <Voting key={view.room.voting?.round ?? 1} view={view} act={act} />;
     case 'RESULT':
