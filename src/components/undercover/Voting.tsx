@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { SKIP_VOTE } from '@/lib/undercover/rules';
 import { Button } from '../ui/Button';
 import { HostForce, PhaseHead, PlayerChip, StatusMark, type ScreenProps } from './parts';
 
-/** Vote secret : un joueur, une voix, pas de retour en arrière. */
+/** Vote secret : un joueur, une voix (ou « Passer »), pas de retour en arrière. */
 export function Voting({ view, act }: ScreenProps) {
   const { room, me } = view;
   const [choice, setChoice] = useState('');
@@ -13,6 +14,7 @@ export function Voting({ view, act }: ScreenProps) {
   const alive = room.players.filter((player) => player.alive && !player.left);
   const candidates = alive.filter((player) => player.id !== me.playerId && (!voting?.candidates || voting.candidates.includes(player.id)));
   const voted = me.myVote !== null;
+  const votedForSkip = me.myVote === SKIP_VOTE;
   const votedFor = room.players.find((player) => player.id === me.myVote);
   const revote = (voting?.round ?? 1) > 1;
 
@@ -65,7 +67,14 @@ export function Voting({ view, act }: ScreenProps) {
                   </span>
                 </label>
               ))}
+              <label className="uc-vote__option uc-vote__option--skip">
+                <input type="radio" name="vote" value={SKIP_VOTE} checked={choice === SKIP_VOTE} onChange={() => setChoice(SKIP_VOTE)} />
+                <span className="uc-vote__card">
+                  <span className="uc-vote__name">Passer</span>
+                </span>
+              </label>
             </div>
+            <p className="uc-hint">« Passer » compte comme un vote pour n’éliminer personne ce tour-ci.</p>
           </fieldset>
           <Button type="submit" disabled={!choice}>
             Valider mon vote
@@ -76,7 +85,9 @@ export function Voting({ view, act }: ScreenProps) {
       {self?.alive && voted && (
         <div className="uc-stamp" role="status" data-enter>
           <p className="uc-stamp__title">Vote enregistré</p>
-          <p>Tu as voté contre {votedFor?.name}. Il n’est plus possible de changer.</p>
+          <p>
+            {votedForSkip ? 'Tu as choisi de passer.' : `Tu as voté contre ${votedFor?.name}.`} Il n’est plus possible de changer.
+          </p>
         </div>
       )}
 

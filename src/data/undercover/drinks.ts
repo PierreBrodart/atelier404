@@ -12,7 +12,7 @@ export const drinks = defineTheme('boissons', 'Boissons', '🥤', [
   ['Mojito', 'Piña colada'],
   ['Whisky', 'Rhum'],
   ['Vodka', 'Gin'],
-  ['Lait', 'Lait de soja'],
+  ['Lait', 'Yaourt à boire'],
   ['Chocolat chaud', 'Cappuccino'],
   ['Smoothie', 'Milkshake'],
   ['Sirop', 'Grenadine'],

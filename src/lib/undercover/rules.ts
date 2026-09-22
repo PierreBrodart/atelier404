@@ -78,6 +78,9 @@ export function normalizeWord(value: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+/** Cible de vote réservée : « passer », jamais un id de joueur (générés via `newId`). */
+export const SKIP_VOTE = 'skip';
+
 export const ROLE_LABELS: Record<Role, string> = {
   CIVIL: 'Civil',
   UNDERCOVER: 'Undercover',

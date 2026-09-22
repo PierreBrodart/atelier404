@@ -126,7 +126,7 @@ async function playUntilVoting(clients, order = clients) {
   await cluesToVoting(clients);
 }
 
-/** CLUES → VOTING (tous les joueurs en vie jouent leur tour). */
+/** CLUES → VOTING (tous les joueurs en vie jouent leur tour, puis le host lance le vote). */
 async function cluesToVoting(clients) {
   await toPhase(clients, 'CLUES');
   for (let guard = 0; guard < 12 && clients[0].room.phase === 'CLUES'; guard += 1) {
@@ -137,7 +137,12 @@ async function cluesToVoting(clients) {
     check(res.ok, `indice de ${speaker.name}`);
     await waitFor(() => clients[0].room.currentSpeakerId !== id || clients[0].room.phase !== 'CLUES', 'tour suivant');
   }
-  await toPhase(clients, 'VOTING');
+  // Une fois tout le monde passé, la partie n'enchaîne plus toute seule : il faut l'action du host.
+  check(clients[0].room.phase === 'CLUES' && clients[0].room.currentSpeakerId === null, 'attend le host après le dernier indice');
+  const host = clients.find((c) => c.me.isHost);
+  const started = await host.act({ type: 'startVote' });
+  check(started.ok, 'le host lance le vote');
+  await waitFor(() => phaseIs(clients, 'VOTING'), 'phase VOTING', 10000);
 }
 
 const byRole = (clients, role) => clients.filter((client) => client.me.role === role);

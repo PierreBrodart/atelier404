@@ -1,6 +1,6 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import { getTheme, themes } from '@/data/undercover';
-import { LIMITS, UNDERCOVER_COUNT, composition, normalizeComposition, normalizeWord } from './rules';
+import { LIMITS, SKIP_VOTE, UNDERCOVER_COUNT, composition, normalizeComposition, normalizeWord } from './rules';
 import { scoreRound } from './scoring';
 import type {
   ActionResult,
@@ -285,12 +285,14 @@ function resolveVotes(room: Room) {
   let outcome: 'eliminated' | 'tie' | 'noElimination' = 'noElimination';
   let eliminatedId: string | null = null;
   let tiedIds: string[] = [];
-  if (max > 0 && top.length === 1) {
+  if (max > 0 && top.length === 1 && top[0] !== SKIP_VOTE) {
     outcome = 'eliminated';
     eliminatedId = top[0];
-  } else if (max > 0 && game.voteRound < LIMITS.maxVoteRounds) {
+  } else if (max > 0 && top.length > 1 && game.voteRound < LIMITS.maxVoteRounds) {
+    // Égalité entre plusieurs cibles (« Passer » y compris) : re-vote entre les ex æquo.
+    // « Passer » reste de toute façon toujours proposable au tour suivant (voir Voting.tsx).
     outcome = 'tie';
-    tiedIds = top;
+    tiedIds = top.filter((id) => id !== SKIP_VOTE);
   }
 
   game.voteResult = { round: game.voteRound, ballots: [...game.votes], tallies, outcome, eliminatedId, tiedIds };
@@ -519,14 +521,24 @@ export function applyAction(room: Room, playerId: string, action: ClientAction):
       break;
     }
 
+    case 'startVote': {
+      if (!game || room.phase !== 'CLUES') return fail('Ce n’est pas le moment de lancer le vote.');
+      if (room.hostId !== playerId) return fail('Seul le host peut lancer le vote.');
+      if (currentSpeaker(room)) return fail('Tout le monde n’a pas encore donné son indice.');
+      beginVoting(room, null, 1);
+      break;
+    }
+
     case 'vote': {
       if (!game || room.phase !== 'VOTING') return fail('Ce n’est pas le moment de voter.');
       if (!alive) return fail('Tu es éliminé : tu ne votes plus.');
       if (game.votes.some((vote) => vote.voterId === playerId)) return fail('Ton vote est déjà enregistré.');
-      if (action.targetId === playerId) return fail('Tu ne peux pas voter pour toi-même.');
-      const eligible = game.voteCandidates ?? game.alive;
-      if (!eligible.includes(action.targetId) || !game.alive.includes(action.targetId)) {
-        return fail('Ce joueur n’est pas éligible.');
+      if (action.targetId !== SKIP_VOTE) {
+        if (action.targetId === playerId) return fail('Tu ne peux pas voter pour toi-même.');
+        const eligible = game.voteCandidates ?? game.alive;
+        if (!eligible.includes(action.targetId) || !game.alive.includes(action.targetId)) {
+          return fail('Ce joueur n’est pas éligible.');
+        }
       }
       game.votes.push({ voterId: playerId, targetId: action.targetId });
       touch(room);
@@ -568,10 +580,9 @@ function step(room: Room): boolean {
     }
     case 'CLUES': {
       const speaker = currentSpeaker(room);
-      if (!speaker) {
-        beginVoting(room, null, 1);
-        return true;
-      }
+      // Une fois tout le monde passé, on n'enchaîne plus tout seul sur le vote : le host
+      // décide du moment (action `startVote`) — la discussion peut continuer avant.
+      if (!speaker) return false;
       if (isAbsent(room, speaker)) {
         game.clues[speaker] = { text: '', skipped: true };
         return true;

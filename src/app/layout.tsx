@@ -68,7 +68,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Aller au contenu
         </a>
         <TransitionProvider>
-          <Header />
+          {/* Pas d'en-tête pendant Undercover : la partie tient sur un écran de téléphone,
+              chaque centimètre compte (voir aussi le footer ci-dessous). */}
+          <HideOnRoute prefix="/undercover">
+            <Header />
+          </HideOnRoute>
           <main id="main" tabIndex={-1}>
             {children}
           </main>

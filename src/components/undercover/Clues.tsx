@@ -11,6 +11,7 @@ export function Clues({ view, act }: ScreenProps) {
   const speaker = room.players.find((player) => player.id === room.currentSpeakerId);
   const myTurn = room.currentSpeakerId === me.playerId;
   const self = room.players.find((player) => player.id === me.playerId);
+  const allSpoke = room.currentSpeakerId === null;
   const ordered = room.clueOrder
     .map((id) => room.players.find((player) => player.id === id))
     .filter((player): player is NonNullable<typeof player> => Boolean(player));
@@ -23,10 +24,17 @@ export function Clues({ view, act }: ScreenProps) {
 
   return (
     <div className="uc-clues">
-      <PhaseHead kicker={`Tour ${room.turn} · Les indices`} title={myTurn ? 'À toi de jouer !' : `${speaker?.name ?? '…'} donne son indice.`}>
-        <p>
-          Chacun son tour, donne un indice sur ton mot <strong>sans le dire</strong>. À l’oral ou par écrit : comme vous voulez.
-        </p>
+      <PhaseHead
+        kicker={`Tour ${room.turn} · Les indices`}
+        title={allSpoke ? 'Tout le monde a parlé.' : myTurn ? 'À toi de jouer !' : `${speaker?.name ?? '…'} donne son indice.`}
+      >
+        {allSpoke ? (
+          <p>Discutez de vive voix tant que vous voulez : c’est au host de lancer le vote quand la table est prête.</p>
+        ) : (
+          <p>
+            Chacun son tour, donne un indice sur ton mot <strong>sans le dire</strong>. À l’oral ou par écrit : comme vous voulez.
+          </p>
+        )}
       </PhaseHead>
 
       <section className="uc-card" aria-labelledby="uc-order-title" data-enter>
@@ -72,7 +80,7 @@ export function Clues({ view, act }: ScreenProps) {
         </form>
       )}
 
-      {!myTurn && self?.alive && (
+      {!allSpoke && !myTurn && self?.alive && (
         <p className="uc-waiting" role="status" data-enter>
           <span className="uc-dots" aria-hidden="true" /> On écoute {speaker?.name ?? 'le prochain joueur'}…
         </p>
@@ -83,7 +91,19 @@ export function Clues({ view, act }: ScreenProps) {
         </p>
       )}
 
-      <HostForce view={view} act={act} label={`Passer le tour de ${speaker?.name ?? 'ce joueur'}`} />
+      {allSpoke && self?.alive && (
+        <div className="uc-actions" data-enter>
+          {me.isHost ? (
+            <Button onClick={() => act({ type: 'startVote' })}>Lancer le vote</Button>
+          ) : (
+            <p className="uc-waiting" role="status">
+              <span className="uc-dots" aria-hidden="true" /> On attend que {room.players.find((player) => player.id === room.hostId)?.name ?? 'l’hôte'} lance le vote…
+            </p>
+          )}
+        </div>
+      )}
+
+      {!allSpoke && <HostForce view={view} act={act} label={`Passer le tour de ${speaker?.name ?? 'ce joueur'}`} />}
     </div>
   );
 }

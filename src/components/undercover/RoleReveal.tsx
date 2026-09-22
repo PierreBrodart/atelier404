@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '../ui/Button';
-import { PhaseHead, PlayerChip, RoleCard, StatusMark, Toggle, type ScreenProps } from './parts';
+import { PhaseHead, PlayerChip, RoleCard, StatusMark, type ScreenProps } from './parts';
 
 /** Étape secrète : chacun retourne sa carte sur son propre téléphone. */
 export function RoleReveal({ view, act }: ScreenProps) {
@@ -36,7 +36,6 @@ export function RoleReveal({ view, act }: ScreenProps) {
       </div>
 
       <div className="uc-actions" data-enter>
-        <Toggle label="Afficher mon mot" checked={revealed} onChange={setRevealed} states={['Caché', 'Visible']} />
         <Button onClick={() => act({ type: 'ready' })} disabled={ready}>
           {ready ? 'C’est noté, on attend les autres' : 'J’ai compris, je suis prêt'}
         </Button>

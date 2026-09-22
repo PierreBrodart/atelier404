@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
+import { SKIP_VOTE } from '@/lib/undercover/rules';
 import { PhaseHead, type ScreenProps } from './parts';
 
 /** Délai avant que la suite s'enchaîne toute seule, sans clic de l'hôte. */
@@ -21,9 +22,10 @@ export function VoteResult({ view, act }: ScreenProps) {
 
   if (!result) return null;
 
-  const nameOf = (id: string) => room.players.find((player) => player.id === id)?.name ?? '?';
+  const nameOf = (id: string) => (id === SKIP_VOTE ? 'Passer' : (room.players.find((player) => player.id === id)?.name ?? '?'));
   const maxVotes = Math.max(1, ...Object.values(result.tallies));
   const tally = Object.entries(result.tallies).sort((a, b) => b[1] - a[1]);
+  const skippedOutright = result.outcome === 'noElimination' && (result.tallies[SKIP_VOTE] ?? 0) >= maxVotes && (result.tallies[SKIP_VOTE] ?? 0) > 0;
 
   const title =
     result.outcome === 'tie'
@@ -36,7 +38,9 @@ export function VoteResult({ view, act }: ScreenProps) {
       ? `${result.tiedIds.map(nameOf).join(' et ')} ont autant de voix : on revote entre eux.`
       : result.outcome === 'eliminated'
         ? 'Les votes sont tombés. Retournons sa carte…'
-        : 'Égalité persistante : aucune élimination ce tour-ci, la partie continue.';
+        : skippedOutright
+          ? 'Le groupe a choisi de n’éliminer personne ce tour-ci : la partie continue.'
+          : 'Égalité persistante : aucune élimination ce tour-ci, la partie continue.';
   const next =
     result.outcome === 'tie' ? 'Lancer le nouveau vote' : result.outcome === 'eliminated' ? 'Retourner la carte' : 'Nouveau tour d’indices';
 

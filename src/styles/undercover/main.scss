@@ -15,7 +15,9 @@
 
   position: relative;
   min-height: 100svh;
-  padding: calc(var(--header-h) + clamp(1rem, 3vw, 2rem)) 0 calc(4rem + var(--sheet));
+  // Pas d'en-tête du site pendant la partie (voir app/layout.tsx) : plus besoin de réserver
+  // sa hauteur (--header-h) en haut, la coquille du jeu (.uc__top) tient lieu de navigation.
+  padding: clamp(1.25rem, 4vw, 2.25rem) 0 calc(4rem + var(--sheet));
   background: var(--uc-bg);
   color: var(--uc-fg);
   transition: background-color 0.8s var(--ease-out), color 0.5s;
@@ -496,12 +498,25 @@
   }
 }
 
+// Rythme vertical commun à tous les écrans de phase (un composant par phase) : PhaseHead,
+// puis une ou plusieurs cartes, puis les actions. Réglé en une seule règle groupée plutôt
+// que dupliqué (et donc oublié) dans chaque écran — c'est cet oubli qui faisait toucher les
+// blocs entre eux (Clues, Voting, Elimination, RoleReveal, VoteResult, GameOver n'avaient
+// aucun espacement propre, seul le Lobby en avait un).
+.uc-lobby,
+.uc-clues,
+.uc-voting,
+.uc-result,
+.uc-elimination,
+.uc-reveal,
+.uc-over {
+  display: grid;
+  gap: clamp(1.85rem, 3.8vw, 3.2rem);
+}
+
 // ——— Lobby ——————————————————————————————————————————————————
 
 .uc-lobby {
-  display: grid;
-  gap: clamp(1.75rem, 3.6vw, 3rem);
-
   &__grid {
     display: grid;
     gap: 1.35rem;

@@ -28,6 +28,7 @@ function announcement(view: RoomView): string {
     case 'REVEAL':
       return 'La partie commence. Retourne ta carte en secret pour découvrir ton rôle.';
     case 'CLUES':
+      if (room.currentSpeakerId === null) return 'Tout le monde a donné son indice. En attente du host pour lancer le vote.';
       return room.currentSpeakerId === me.playerId
         ? 'C’est à toi de donner ton indice.'
         : `${nameOf(room.currentSpeakerId)} donne son indice.`;

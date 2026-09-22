@@ -92,6 +92,7 @@ export type ClientAction =
   | { type: 'startGame' }
   | { type: 'ready' }
   | { type: 'submitClue'; text: string }
+  | { type: 'startVote' }
   | { type: 'vote'; targetId: string }
   | { type: 'guess'; word: string }
   | { type: 'next' }

@@ -7,7 +7,7 @@ export const places = defineTheme('lieux', 'Lieux', '📍', [
   ['École', 'Université'],
   ['Hôpital', 'Clinique'],
   ['Bibliothèque', 'Librairie'],
-  ['Supermarché', 'Marché'],
+  ['Supermarché', 'Épicerie'],
   ['Boulangerie', 'Pâtisserie'],
   ['Gare', 'Aéroport'],
   ['Château', 'Palais'],

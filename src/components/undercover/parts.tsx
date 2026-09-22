@@ -134,7 +134,7 @@ export function RoleCard({
         <div className="uc-flip__face uc-flip__face--back" aria-hidden={!flipped}>
           {flipped && (
             <>
-              <p className="uc-flip__kicker">{name ? `${name} était…` : kicker}</p>
+              {(name || !hideRole) && <p className="uc-flip__kicker">{name ? `${name} était…` : kicker}</p>}
               {!hideRole && <p className="uc-role">{ROLE_LABELS[role].toUpperCase()}</p>}
               {word ? (
                 <>

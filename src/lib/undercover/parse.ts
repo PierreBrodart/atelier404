@@ -30,6 +30,7 @@ export function parseAction(input: unknown): ClientAction | null {
   switch (input.type) {
     case 'startGame':
     case 'ready':
+    case 'startVote':
     case 'next':
     case 'force':
     case 'newRound':

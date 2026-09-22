@@ -4,7 +4,7 @@ export const sports = defineTheme('sports', 'Sports', '⚽', [
   ['Football', 'Rugby'],
   ['Tennis', 'Badminton'],
   ['Basket', 'Handball'],
-  ['Volley', 'Beach-volley'],
+  ['Volley', 'Water-polo'],
   ['Natation', 'Plongeon'],
   ['Ski', 'Snowboard'],
   ['Judo', 'Karaté'],
