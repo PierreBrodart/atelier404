@@ -58,4 +58,4 @@ npm run test:undercover -- http://localhost:3000   # tests de bout en bout du je
 
 ## Licence
 
-Projet fictif, réalisé dans un cadre pédagogique. Photos : Unsplash (licence libre).
+Projet fictif, réalisé dans un cadre pédagogique. Photos : Unsplash (licence libre). .
