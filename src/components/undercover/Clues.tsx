@@ -91,7 +91,7 @@ export function Clues({ view, act }: ScreenProps) {
         </p>
       )}
 
-      {allSpoke && self?.alive && (
+      {allSpoke && (me.isHost || self?.alive) && (
         <div className="uc-actions" data-enter>
           {me.isHost ? (
             <Button onClick={() => act({ type: 'startVote' })}>Lancer le vote</Button>
