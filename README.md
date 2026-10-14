@@ -35,10 +35,12 @@ docker build -t atelier404 \
 docker run -p 3000:3000 atelier404
 ```
 
-Ou avec le `docker-compose.yml` fourni (c'est ce que lit Dokploy) :
+En production, l'image est construite par GitHub Actions à chaque push sur `main`, poussée sur GHCR, puis
+Dokploy la télécharge (le serveur ne build jamais : il n'a pas assez de mémoire). `docker-compose.yml` ne fait que
+télécharger l'image ; pour la construire en local avec compose :
 
 ```bash
-NEXT_PUBLIC_SITE_URL=https://votre-domaine.fr docker compose up --build
+NEXT_PUBLIC_SITE_URL=https://votre-domaine.fr docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
 ```
 
 Détails, variables d'environnement (build vs runtime), et **pourquoi un seul réplica** : [TECHNICAL.md §12](./TECHNICAL.md#12-docker--dokploy).

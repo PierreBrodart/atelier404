@@ -369,26 +369,53 @@ inclusion explicite via `outputFileTracingIncludes`.
 Toute variable `NEXT_PUBLIC_*` doit passer par `ARG`/`--build-arg`, jamais par les variables d'environnement du
 conteneur au lancement : à ce moment-là, le JavaScript est déjà compilé, la modifier n'aurait aucun effet.
 
+### Build sur GitHub, pas sur le serveur
+
+Le serveur de production est trop petit pour `next build` (le processus est tué faute de mémoire et le
+déploiement plante). L'image est donc construite par **GitHub Actions** (`.github/workflows/deploy.yml`), à
+chaque push sur `main` ou à la demande (onglet Actions → *Build & deploy* → *Run workflow*) :
+
+1. **`image`** : `docker build` sur un runner GitHub (plafond mémoire relevé à 4 Go), puis push sur GHCR :
+   `ghcr.io/pierrebrodart/atelier404:latest` et `:sha-<commit>`. Le paquet GHCR est **public** : le serveur le
+   télécharge sans identifiants.
+2. **`deploy`** : appel de l'API Dokploy (`POST /api/compose.deploy`) ; Dokploy relit `docker-compose.yml`, qui ne
+   contient **aucune section `build`** — seulement `image:` + `pull_policy: always` — et se contente de télécharger
+   l'image puis de relancer le conteneur.
+
+Réglages du dépôt GitHub (Settings → Secrets and variables → Actions) :
+
+| Nom | Type | Rôle |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BASE_PATH`, `NEXT_PUBLIC_FORM_ENDPOINT` | Variables | Build args figés dans l'image |
+| `DOKPLOY_URL` | Variable | Adresse du panneau Dokploy |
+| `DOKPLOY_COMPOSE_ID` | Variable | Identifiant du service Compose (dans l'URL de sa page Dokploy) ; vide = pas de redéploiement |
+| `DOKPLOY_API_KEY` | **Secret** | Clé d'API Dokploy (Settings → Profile → API/CLI) |
+
+Les `NEXT_PUBLIC_*` se règlent donc **côté GitHub**, plus dans l'environnement Dokploy (le serveur ne build plus).
+
 ### Sur Dokploy
 
-1. Nouvelle application → type **Docker Compose**, pointer sur ce dépôt (`docker-compose.yml` à la racine).
-2. Renseigner `NEXT_PUBLIC_SITE_URL` (et `NEXT_PUBLIC_BASE_PATH` si le site ne vit pas à la racine du domaine)
-   dans les variables d'environnement du build, côté interface Dokploy — elles sont lues par `docker-compose.yml`
-   via `${NEXT_PUBLIC_SITE_URL:-...}`.
-3. Attacher un domaine sur le port interne **3000** (celui exposé par le conteneur).
-4. **Un seul réplica.** Ne jamais activer de scaling horizontal sur ce service : le mini-jeu Undercover garde
+1. Application de type **Docker Compose**, pointée sur ce dépôt (`docker-compose.yml` à la racine).
+2. **Autodeploy désactivé** : c'est la CI qui déclenche le déploiement, une fois l'image poussée (sinon Dokploy
+   redéploierait l'ancienne image avant la fin du build).
+3. Variables d'**exécution** seulement dans l'environnement Dokploy (`KAHOOT_EDITOR_SLUG`…).
+4. Attacher un domaine sur le port interne **3000** (celui exposé par le conteneur).
+5. **Un seul réplica.** Ne jamais activer de scaling horizontal sur ce service : le mini-jeu Undercover garde
    l'état des parties en mémoire dans le processus (§9) — plusieurs instances ne partageraient pas les rooms, et
    des joueurs dans la même partie pourraient atterrir sur des conteneurs différents.
-5. Un `HEALTHCHECK` est défini dans le `Dockerfile` (requête sur la page d'accueil) : Dokploy peut s'en servir
+6. Un `HEALTHCHECK` est défini dans le `Dockerfile` (requête sur la page d'accueil) : Dokploy peut s'en servir
    pour détecter un conteneur qui ne répond plus.
+
+Revenir à une version précédente : dans `docker-compose.yml`, `ATELIER404_IMAGE` (variable d'environnement
+Dokploy) accepte un tag précis, ex. `ghcr.io/pierrebrodart/atelier404:sha-095bc0c`.
 
 ### Construire et tester en local
 
 ```bash
 docker build -t atelier404 --build-arg NEXT_PUBLIC_SITE_URL=https://mondomaine.fr .
 docker run -p 3000:3000 atelier404
-# ou :
-NEXT_PUBLIC_SITE_URL=https://mondomaine.fr docker compose up --build
+# ou, via compose (docker-compose.build.yml remet la section build) :
+NEXT_PUBLIC_SITE_URL=https://mondomaine.fr docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
 ```
 
 ## 13. Kahoot (quiz manuel)

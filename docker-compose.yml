@@ -1,24 +1,24 @@
-# Déploiement Dokploy (ou tout hôte Docker) à partir du Dockerfile du dépôt.
+# Déploiement Dokploy (ou tout hôte Docker) à partir de l'image construite par la CI.
 #
-# Dans Dokploy : créer une application de type "Docker Compose", pointer sur ce fichier,
-# renseigner les build args ci-dessous dans l'onglet correspondant (ou directement dans
-# ce fichier si vous préférez le versionner), attacher un domaine sur le port interne 3000.
+# Le serveur ne construit RIEN : `next build` y épuise la mémoire et le déploiement plante.
+# L'image est construite par GitHub Actions (.github/workflows/deploy.yml), poussée sur
+# GHCR, puis la CI demande à Dokploy de redéployer : Dokploy ne fait que la télécharger.
+#
+# Dans Dokploy : application de type "Docker Compose" pointée sur ce fichier, déploiement
+# automatique au push DÉSACTIVÉ (c'est la CI qui déclenche, une fois l'image prête), domaine
+# attaché sur le port interne 3000. Les variables NEXT_PUBLIC_* se règlent côté GitHub
+# (variables du dépôt), pas ici : elles sont figées dans l'image au build.
+#
+# Construire l'image soi-même, en local : voir docker-compose.build.yml.
 #
 # ⚠️ Un seul réplica : le jeu Undercover garde son état en mémoire dans le processus
 # (voir TECHNICAL.md §9 et §12). Ne pas activer de scaling horizontal sur ce service.
 
 services:
   atelier404:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        # Domaine public final (sitemap, Open Graph, robots.txt).
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://atelier404.fr}
-        # Sous-chemin si le site ne vit pas à la racine du domaine (ex. /atelier404).
-        NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-}
-        # URL d'un service de formulaire externe (Formspree…) ; vide = envoi simulé.
-        NEXT_PUBLIC_FORM_ENDPOINT: ${NEXT_PUBLIC_FORM_ENDPOINT:-}
+    image: ${ATELIER404_IMAGE:-ghcr.io/pierrebrodart/atelier404:latest}
+    # Toujours retélécharger le tag au déploiement (sinon `latest` resterait l'ancienne image en cache).
+    pull_policy: always
     restart: unless-stopped
     ports:
       - '3001:3000'

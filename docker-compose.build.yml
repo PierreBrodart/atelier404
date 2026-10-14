@@ -1,0 +1,26 @@
+# Construire l'image en local au lieu de la télécharger depuis GHCR (test avant de pousser) :
+#
+#   NEXT_PUBLIC_SITE_URL=https://mondomaine.fr \
+#     docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
+#
+# Jamais sur le serveur de production : le build y manque de mémoire (voir docker-compose.yml).
+
+services:
+  atelier404:
+    image: atelier404:local
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Domaine public final (sitemap, Open Graph, robots.txt).
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://atelier404.fr}
+        # Sous-chemin si le site ne vit pas à la racine du domaine (ex. /atelier404).
+        NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-}
+        # URL d'un service de formulaire externe (Formspree…) ; vide = envoi simulé.
+        NEXT_PUBLIC_FORM_ENDPOINT: ${NEXT_PUBLIC_FORM_ENDPOINT:-}
+        # Plafond mémoire du build Next (Mo). Sur une machine à 1 Go, descendre à 768 ;
+        # remonter si le build échoue sur « JavaScript heap out of memory ». Voir Dockerfile.
+        BUILD_MEMORY_MB: ${BUILD_MEMORY_MB:-1536}
+        # Workers de prérendu pendant le build (1 = le moins gourmand, 2 par défaut).
+        NEXT_BUILD_CPUS: ${NEXT_BUILD_CPUS:-2}
