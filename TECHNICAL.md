@@ -184,9 +184,22 @@ Toutes les transitions sont décidées **par le serveur** et diffusées à tous 
 quelqu'un est absent) — **sauf CLUES → VOTING**, volontairement manuelle : une fois le dernier indice donné, la
 partie reste en CLUES (discussion libre) jusqu'à ce que le host envoie l'action `startVote`.
 
-- **Composition** : au moins 3 joueurs (10 max) ; au moins un imposteur ; au moins 2 civils ; civils strictement plus
-  nombreux que les imposteurs. Toute demande incohérente est corrigée : le compteur modifié par le host est conservé,
-  l'autre s'ajuste.
+- **Composition** : au moins 3 joueurs (10 max) ; au moins 1 Undercover (nombre choisi par le host) + Mr White en
+  option ; au moins 2 civils ; civils strictement plus nombreux que les imposteurs (`maxImpostors` dans `rules.ts` :
+  1 imposteur à 3-4 joueurs, 2 à 5-6, 3 à 7-8, 4 à 9-10). Toute demande incohérente est corrigée par
+  `normalizeComposition` : le réglage modifié par le host est conservé, l'autre s'ajuste (si des joueurs partent, le
+  nombre d'Undercover baisse avant que Mr White ne soit retiré).
+- **Spectateurs et file d'attente** : chaque personne a une place (`ServerPlayer.seat`) : `player` (assis à la
+  table), `queue` (spectateur en file d'attente) ou `watch` (spectateur qui regarde seulement). Une arrivée en
+  pleine partie, ou en lobby quand la table est pleine, entre en `queue` ; au retour au lobby (et dès qu'une place se
+  libère en lobby), `fillSeats` assied la file dans l'ordre d'arrivée. Action `seat` : un spectateur choisit de jouer
+  ou de regarder à tout moment ; un joueur ne peut passer spectateur qu'en lobby. 10 spectateurs maximum en plus
+  des joueurs. Un spectateur déconnecté plus de 30 s est retiré (il n'a aucune donnée de manche).
+- **Chat** : action `chat` (200 caractères, 5 messages / 5 s par personne, 80 derniers messages gardés par room).
+  Pendant une manche, un éliminé ou un spectateur écrit « hors jeu » (`ChatMessage.ghost`) : seuls les éliminés et les
+  spectateurs le lisent, car un éliminé connaît son mot ; tout redevient visible en fin de manche.
+- **Indice préparé à l'avance** : pendant le tour des autres, un joueur peut taper son indice ; le brouillon reste
+  dans son navigateur (rien n'est envoyé) et il n'a plus qu'à le valider quand son tour arrive (`Clues.tsx`).
 - **Vote** : contre un joueur, ou « Passer » (`SKIP_VOTE` dans `rules.ts`) pour n'éliminer personne ce tour-ci —
   compte comme un vote normal dans le dépouillement, jamais comme cible éligible à l'élimination.
 - **Égalité** : re-vote restreint aux ex æquo (« Passer » reste toujours proposable) ; jusqu'à 3 votes ; si
@@ -195,7 +208,10 @@ partie reste en CLUES (discussion libre) jusqu'à ce que le host envoie l'action
 - **Victoire** : les Civils gagnent quand tous les imposteurs sont éliminés ; les imposteurs gagnent quand les civils
   ne sont plus strictement plus nombreux qu'eux ; Mr White éliminé peut deviner le mot (insensible à la casse, aux
   accents et à la ponctuation) et gagne s'il le trouve.
-- **Scores** : `src/lib/undercover/scoring.ts` (Civil gagnant 2, Undercover gagnant 10, Mr White gagnant 6).
+- **Scores** : `src/lib/undercover/scoring.ts` (Civil gagnant 2, Undercover gagnant 10, Mr White gagnant 6). Tout le
+  camp gagnant marque, éliminés compris, mais un gagnant éliminé n'a que `ELIMINATED_SHARE` (la moitié) des points ;
+  exception : Mr White qui gagne en devinant le mot garde ses 6 points (il vient d'être éliminé, la victoire est la
+  sienne). Quand les Undercover gagnent, Mr White fait partie de leur camp.
 - **Indices des tours précédents** : au sein d'une même manche, `game.clueHistory` garde les indices des tours
   déjà joués (remis à zéro à chaque nouvelle manche, avec `game.clues`) — déjà publics au moment où ils ont été
   donnés, donc sans risque à republier. Affiché, repliable, **uniquement pendant le vote** (pas pendant les
@@ -211,8 +227,10 @@ partie reste en CLUES (discussion libre) jusqu'à ce que le host envoie l'action
 - La banque de mots n'est jamais importée côté client : la page serveur ne passe au client que la liste des thèmes
   **sans** leurs paires (`themeInfos`).
 - Les jetons d'authentification ne sont jamais diffusés ; comparaison en temps constant.
-- Le test `undercover-e2e.mjs` analyse **toutes** les vues brutes reçues par chaque joueur pour vérifier qu'aucun secret
-  d'autrui n'y figure.
+- Les spectateurs reçoivent la vue publique, sans rôle ni mot. Le chat est filtré par destinataire (`chatFor` dans
+  `view.ts`) : un joueur encore en vie ne reçoit jamais un message hors jeu pendant la manche.
+- Le test `undercover-e2e.mjs` analyse **toutes** les vues brutes reçues par chaque joueur (et par un spectateur) pour
+  vérifier qu'aucun secret d'autrui n'y figure, messages hors jeu compris.
 
 ### Présence et déconnexions
 
@@ -222,9 +240,10 @@ partie reste en CLUES (discussion libre) jusqu'à ce que le host envoie l'action
 | Coupure réseau | `EventSource` se reconnecte ; le joueur apparaît « Reconnexion… » |
 | Déconnecté > 30 s | marqué « Absent » : il ne bloque plus ready / indices / vote |
 | Lobby, déconnecté > 30 s | retiré de la room |
-| Host déconnecté > 15 s, ou qui quitte | rôle de host transféré à un joueur connecté |
+| Host déconnecté > 15 s, ou qui quitte | rôle de host transféré à un joueur connecté (à défaut, un spectateur) |
 | Joueur qui quitte en cours de partie | éliminé (rôle révélé), victoire vérifiée immédiatement |
-| Arrivée tardive | refusée avec un message clair (retour possible à la manche suivante) |
+| Arrivée tardive, ou table pleine | spectateur en file d'attente, assis à la manche suivante (ou dès qu'une place se libère en lobby) |
+| Spectateur déconnecté > 30 s | retiré de la room |
 | Room vide 10 min / âgée de 8 h | supprimée |
 
 Le host dispose d'un bouton de secours (« Passer le tour », « Clôturer le vote »…) pour débloquer une phase.
@@ -245,9 +264,9 @@ puis l'ajouter au tableau `themes` de `src/data/undercover/index.ts`. Le sélect
 
 ### Sécurité / robustesse
 
-Entrées validées (`parse.ts`), corps limité à 4 Ko, noms de 2 à 16 caractères, 10 joueurs et 300 rooms maximum,
-codes de room sans caractères ambigus. Pas de limitation de débit par IP : à ajouter derrière un reverse proxy si le
-jeu est exposé publiquement.
+Entrées validées (`parse.ts`), corps limité à 4 Ko, noms de 2 à 16 caractères, 10 joueurs + 10 spectateurs et 300
+rooms maximum, codes de room sans caractères ambigus, chat limité en débit par personne. Pas de limitation de débit
+par IP : à ajouter derrière un reverse proxy si le jeu est exposé publiquement.
 
 ---
 

@@ -7,8 +7,10 @@ import {
   createRoom,
   findPlayer,
   generateCode,
+  isSpectator,
   reconcile,
   removePlayer,
+  seatedPlayers,
   transferHost,
 } from './engine';
 import { LIMITS, TIMING } from './rules';
@@ -121,13 +123,32 @@ export function joinRoom(code: string, name: string): JoinResponse | { error: st
 export function peekRoom(code: string): PeekResponse {
   const room = store.rooms.get(code);
   if (!room) {
-    return { exists: false, joinable: false, reason: 'Cette room n’existe pas (ou elle a expiré).', phase: null, playerCount: 0, max: LIMITS.maxPlayers };
+    return {
+      exists: false,
+      joinable: false,
+      spectator: false,
+      reason: 'Cette room n’existe pas (ou elle a expiré).',
+      phase: null,
+      playerCount: 0,
+      max: LIMITS.maxPlayers,
+    };
   }
-  const count = activePlayers(room).length;
+  const count = seatedPlayers(room).length;
+  const spectators = activePlayers(room).filter(isSpectator).length;
+  const spectator = room.phase !== 'LOBBY' || count >= LIMITS.maxPlayers;
   let reason: string | null = null;
-  if (room.phase !== 'LOBBY') reason = 'La partie est déjà lancée. Reviens à la prochaine manche !';
-  else if (count >= LIMITS.maxPlayers) reason = 'La room est pleine.';
-  return { exists: true, joinable: reason === null, reason, phase: room.phase, playerCount: count, max: LIMITS.maxPlayers };
+  if (spectator && spectators >= LIMITS.maxSpectators) reason = 'La room est pleine, spectateurs compris.';
+  else if (room.phase !== 'LOBBY') reason = 'La partie est en cours : tu la suis en spectateur et tu joues dès la prochaine manche.';
+  else if (spectator) reason = 'La table est pleine : tu entres en file d’attente, et tu joues dès qu’une place se libère.';
+  return {
+    exists: true,
+    joinable: !spectator || spectators < LIMITS.maxSpectators,
+    spectator,
+    reason,
+    phase: room.phase,
+    playerCount: count,
+    max: LIMITS.maxPlayers,
+  };
 }
 
 export function runAction(code: string, token: string, action: ClientAction): ActionResult | null {
@@ -194,7 +215,8 @@ function tick(): void {
     for (const player of [...room.players]) {
       if (player.left || player.connections > 0 || player.disconnectedAt === null) continue;
       const gone = now - player.disconnectedAt;
-      if (room.phase === 'LOBBY' && gone > TIMING.lobbyDropAfterMs) {
+      // Un spectateur n'a rien à garder pendant la manche : il est retiré comme en lobby.
+      if ((room.phase === 'LOBBY' || isSpectator(player)) && gone > TIMING.lobbyDropAfterMs) {
         removePlayer(room, player.id);
         changed = true;
       } else if (!player.away && gone > TIMING.awayAfterMs) {

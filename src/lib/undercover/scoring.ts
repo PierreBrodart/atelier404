@@ -11,13 +11,24 @@ export const SCORE_TABLE: Record<Winner, Partial<Record<Role, number>>> = {
   MR_WHITE: { MR_WHITE: 6 },
 };
 
-/** Points de la manche pour chaque joueur (0 pour les perdants). */
-export function scoreRound(outcome: Outcome, assignments: Record<string, Assignment>): Record<string, number> {
+/** Part des points d'un joueur du camp gagnant éliminé en cours de manche (les survivants ont le plein tarif). */
+export const ELIMINATED_SHARE = 0.5;
+
+/**
+ * Points de la manche pour chaque joueur (0 pour les perdants). Tout le camp gagnant marque ; un gagnant
+ * éliminé en cours de route n'a que `ELIMINATED_SHARE` des points — sauf Mr White qui gagne en devinant
+ * le mot : il vient d'être éliminé, mais la victoire est la sienne.
+ */
+export function scoreRound(
+  outcome: Outcome,
+  assignments: Record<string, Assignment>,
+  alive: readonly string[],
+): Record<string, number> {
   const scores: Record<string, number> = {};
   for (const [playerId, assignment] of Object.entries(assignments)) {
-    scores[playerId] = outcome.winnerIds.includes(playerId)
-      ? (SCORE_TABLE[outcome.winner][assignment.role] ?? 0)
-      : 0;
+    const points = outcome.winnerIds.includes(playerId) ? (SCORE_TABLE[outcome.winner][assignment.role] ?? 0) : 0;
+    const survived = alive.includes(playerId) || outcome.byGuess;
+    scores[playerId] = survived ? points : Math.round(points * ELIMINATED_SHARE);
   }
   return scores;
 }

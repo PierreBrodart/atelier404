@@ -4,10 +4,18 @@ import type { GameSettings, Role } from './types';
 export const LIMITS = {
   minPlayers: 3,
   maxPlayers: 10,
+  /** Spectateurs en plus des joueurs (file d'attente comprise) */
+  maxSpectators: 10,
   nameMin: 2,
   nameMax: 16,
   clueMax: 40,
   guessMax: 40,
+  chatMax: 200,
+  /** Messages de chat gardés par room */
+  chatHistory: 80,
+  /** Limitation de débit du chat : au plus `chatBurst` messages par fenêtre de `chatWindowMs` */
+  chatBurst: 5,
+  chatWindowMs: 5_000,
   /** Nombre maximum de re-votes successifs avant d'abandonner l'élimination du tour */
   maxVoteRounds: 3,
   /** Tours consécutifs sans élimination avant que les imposteurs gagnent */
@@ -48,25 +56,40 @@ export function composition(players: number, undercover: number, mrWhite: number
 }
 
 /**
- * Il y a toujours exactement 1 Undercover. Mr White est optionnel (0 ou 1) et peut
- * coexister avec l'Undercover : c'est une bascule, pas un compteur.
+ * Nombre maximum d'imposteurs (Undercover + Mr White) pour `players` joueurs.
+ * La table est comptée à au moins `minPlayers` : en lobby, on peut préparer la partie avant que tout le monde soit là.
  */
-export const UNDERCOVER_COUNT = 1;
-
-/** Vrai si la table est assez grande pour ajouter Mr White en plus de l'Undercover. */
-export function mrWhiteAvailable(players: number): boolean {
-  return composition(Math.max(players, LIMITS.minPlayers), UNDERCOVER_COUNT, 1).valid;
+export function maxImpostors(players: number): number {
+  const count = Math.max(players, LIMITS.minPlayers);
+  let max = 0;
+  while (composition(count, max + 1, 0).valid) max += 1;
+  return max;
 }
 
-/** Ramène les réglages à une composition valide pour `players` joueurs. */
+/**
+ * Il y a toujours au moins 1 Undercover (le host en choisit le nombre). Mr White est optionnel (0 ou 1)
+ * et s'ajoute aux Undercover : c'est une bascule, pas un compteur.
+ *
+ * Ramène les réglages à une composition valide pour `players` joueurs. Quand les deux ne tiennent pas
+ * ensemble, `keep` désigne le réglage qui l'emporte (celui que le host vient de modifier) ; l'autre s'ajuste.
+ */
 export function normalizeComposition(
+  undercoverWanted: number,
   mrWhiteWanted: boolean,
   players: number,
+  keep: 'undercover' | 'mrWhite' = 'mrWhite',
 ): Pick<GameSettings, 'undercoverCount' | 'mrWhiteCount'> {
-  const count = Math.max(players, LIMITS.minPlayers);
-  // Si la table est trop petite pour Mr White, on le désactive tout seul.
-  const mrWhiteCount = mrWhiteWanted && composition(count, UNDERCOVER_COUNT, 1).valid ? 1 : 0;
-  return { undercoverCount: UNDERCOVER_COUNT, mrWhiteCount };
+  const max = maxImpostors(players);
+  const wanted = Number.isFinite(undercoverWanted) ? Math.round(undercoverWanted) : 1;
+  const clamp = (value: number, limit: number) => Math.min(Math.max(value, 1), Math.max(limit, 1));
+
+  if (keep === 'undercover') {
+    const undercoverCount = clamp(wanted, max);
+    return { undercoverCount, mrWhiteCount: mrWhiteWanted && undercoverCount + 1 <= max ? 1 : 0 };
+  }
+  // Mr White d'abord : il faut au moins 1 Undercover à côté de lui, sinon la table est trop petite.
+  const mrWhiteCount = mrWhiteWanted && max >= 2 ? 1 : 0;
+  return { undercoverCount: clamp(wanted, max - mrWhiteCount), mrWhiteCount };
 }
 
 /** Normalise un mot pour la comparaison (casse, accents, ponctuation, espaces). */

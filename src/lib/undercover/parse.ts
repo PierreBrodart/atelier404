@@ -50,14 +50,26 @@ export function parseAction(input: unknown): ClientAction | null {
       return word ? { type: 'guess', word } : null;
     }
 
+    case 'seat':
+      return typeof input.play === 'boolean' ? { type: 'seat', play: input.play } : null;
+
+    case 'chat': {
+      const message = text(input.text, LIMITS.chatMax);
+      return message ? { type: 'chat', text: message } : null;
+    }
+
     case 'updateSettings': {
       if (!isRecord(input.settings)) return null;
       const settings: Partial<GameSettings> = {};
-      // Le nombre d'Undercover n'est plus configurable : il y en a toujours exactement 1.
-      const { themeId, mrWhiteCount, revealRoles } = input.settings;
+      // Les nombres sont bornés plus tard par `normalizeComposition` (selon la taille de la table).
+      const { themeId, undercoverCount, mrWhiteCount, revealRoles } = input.settings;
       if (themeId !== undefined) {
         if (typeof themeId !== 'string') return null;
         settings.themeId = themeId.slice(0, 40);
+      }
+      if (undercoverCount !== undefined) {
+        if (typeof undercoverCount !== 'number' || !Number.isFinite(undercoverCount)) return null;
+        settings.undercoverCount = undercoverCount;
       }
       if (mrWhiteCount !== undefined) {
         if (typeof mrWhiteCount !== 'number' || !Number.isFinite(mrWhiteCount)) return null;

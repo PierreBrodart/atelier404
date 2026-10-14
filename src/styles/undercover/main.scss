@@ -190,6 +190,46 @@
     flex-wrap: wrap;
     gap: 0.5rem 1.5rem;
   }
+
+  &__sub {
+    @include mono-label;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 0.85rem;
+    border-top: 2px dashed var(--ink);
+  }
+
+  // Indice : brouillon préparé avant son tour, puis « à toi » quand le tour arrive
+  &--draft {
+    border-style: dashed;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  &--turn {
+    background: var(--sun);
+  }
+}
+
+// Bandeau des spectateurs (file d'attente ou simple observation)
+.uc-spectator {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1.25rem;
+  padding: 0.6rem 1rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2.5px dashed var(--ink);
+  border-radius: var(--radius);
+  font-weight: 700;
+  --focus: var(--ink);
+  --focus-halo: var(--paper);
+
+  p {
+    max-width: 60ch;
+  }
 }
 
 .uc-count {
@@ -303,7 +343,8 @@
 
 .uc-toast {
   position: fixed;
-  bottom: 1.25rem;
+  // Au-dessus du bouton flottant du chat (.uc-chat__toggle), qu'il ne doit pas masquer
+  bottom: 5.25rem;
   left: 50%;
   z-index: 80;
   max-width: min(32rem, calc(100vw - 2rem));
@@ -385,6 +426,11 @@
       text-decoration: line-through;
       text-decoration-thickness: 2px;
     }
+  }
+
+  // Spectateur : en pointillés comme un absent, mais sans barrer le nom (il n'a pas perdu)
+  &--watch {
+    border-style: dashed;
   }
 
   &__body {
@@ -818,6 +864,61 @@
   .uc-toggle:hover .uc-toggle__ui {
     background: var(--paper);
     color: var(--ink);
+  }
+}
+
+// Compteur – / + (nombre d'Undercover) : même pastille que l'interrupteur, deux vrais boutons ronds.
+.uc-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-self: start;
+  min-height: 3.25rem;
+  padding: 0.2rem 1.1rem 0.2rem 0.25rem;
+  border: 2.5px solid currentColor;
+  border-radius: 999px;
+  font-weight: 800;
+
+  &__button {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: 2.5px solid var(--ink);
+    border-radius: 50%;
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1;
+
+    @include motion-safe {
+      transition: background-color 0.2s, translate 0.3s var(--ease-spring);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+  }
+
+  &__value {
+    min-width: 2ch;
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    text-align: center;
+  }
+}
+
+@include hover-capable {
+  .uc-stepper__button:not(:disabled):hover {
+    background: var(--sun);
+    translate: 0 -2px;
   }
 }
 
@@ -1446,6 +1547,248 @@
     font-family: var(--font-mono);
     font-size: 0.85rem;
     opacity: 0.85;
+  }
+}
+
+// ——— Chat (bouton flottant + panneau) ————————————————————————————
+
+.uc-chat {
+  &__toggle {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 70;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 3.25rem;
+    padding: 0.5rem 1.1rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: 999px;
+    box-shadow: 4px 4px 0 var(--ink);
+    font-weight: 800;
+
+    @include motion-safe {
+      transition: background-color 0.2s, color 0.2s, translate 0.3s var(--ease-spring);
+    }
+
+    &[aria-expanded='true'] {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 3px var(--paper), 0 0 0 6px var(--ink);
+    }
+  }
+
+  &__badge {
+    min-width: 1.6rem;
+    padding: 0 0.4rem;
+    background: var(--tomato);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    text-align: center;
+
+    @include motion-safe {
+      animation: uc-pop 0.4s var(--ease-spring);
+    }
+  }
+
+  &__panel {
+    --focus: var(--ink);
+    --focus-halo: var(--paper);
+
+    position: fixed;
+    right: 1rem;
+    bottom: 5.25rem;
+    z-index: 70;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    width: min(24rem, calc(100vw - 2rem));
+    height: min(32rem, calc(100svh - 7rem));
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 6px 6px 0 var(--ink);
+    overflow: hidden;
+    transform-origin: bottom right;
+
+    @include motion-safe {
+      animation: uc-pop 0.35s var(--ease-spring);
+    }
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 0.4rem 0.35rem 1rem;
+    background: var(--sun);
+    border-bottom: var(--border);
+  }
+
+  &__title {
+    @include display(1.6rem);
+  }
+
+  &__close {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    font-size: 1.7rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  &__list {
+    display: grid;
+    align-content: start;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0.9rem;
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ink) transparent;
+  }
+
+  &__empty {
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  &__msg {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 0.5rem;
+
+    .uc-avatar {
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.85rem;
+    }
+
+    @include motion-safe {
+      animation: uc-slide 0.3s var(--ease-out);
+    }
+  }
+
+  &__bubble {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+    padding: 0.4rem 0.7rem 0.5rem;
+    background: var(--paper-deep);
+    border: 2px solid var(--ink);
+    border-radius: 0.3rem 1rem 1rem 1rem;
+    overflow-wrap: anywhere;
+
+    .uc-chat__msg--me & {
+      background: var(--sun);
+    }
+
+    // Hors jeu (éliminé ou spectateur pendant la manche) : pointillés, comme les joueurs sortis
+    .uc-chat__msg--ghost & {
+      background: transparent;
+      border-style: dashed;
+    }
+  }
+
+  &__author {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  &__text {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  &__form {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-top: var(--border);
+  }
+
+  &__note {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  &__row {
+    display: flex;
+    gap: 0.5rem;
+
+    input {
+      flex: 1;
+      min-width: 0;
+      min-height: 2.75rem;
+      padding: 0.4rem 0.9rem;
+      background: var(--paper);
+      color: var(--ink);
+      border: var(--border);
+      border-radius: 999px;
+      font: inherit;
+
+      &::placeholder {
+        color: var(--ink-soft);
+      }
+
+      &:focus-visible {
+        outline: 3px solid var(--ink);
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  &__send {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    background: var(--ink);
+    color: var(--paper);
+    border: var(--border);
+    border-radius: 999px;
+    font-weight: 800;
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  &__error {
+    color: var(--danger);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+}
+
+@include hover-capable {
+  .uc-chat__toggle:hover {
+    translate: 0 -2px;
+  }
+
+  .uc-chat__close:hover {
+    background: var(--paper);
   }
 }
 

@@ -1,23 +1,43 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { cx } from '@/lib/cx';
+import { LIMITS } from '@/lib/undercover/rules';
 import { Button } from '../ui/Button';
 import { HostForce, PhaseHead, PlayerChip, StatusMark, type ScreenProps } from './parts';
 
-/** Les indices se donnent chacun son tour, dans un ordre tiré au sort. */
+/**
+ * Les indices se donnent chacun son tour, dans un ordre tiré au sort. On peut préparer le sien
+ * pendant que les autres parlent : le brouillon reste sur le téléphone (jamais envoyé au serveur)
+ * jusqu'à ce que ce soit son tour, où il suffit de le valider.
+ */
 export function Clues({ view, act }: ScreenProps) {
   const { room, me } = view;
   const [text, setText] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const speaker = room.players.find((player) => player.id === room.currentSpeakerId);
   const myTurn = room.currentSpeakerId === me.playerId;
   const self = room.players.find((player) => player.id === me.playerId);
+  const spectator = me.seat !== 'player';
   const allSpoke = room.currentSpeakerId === null;
+  const spoke = room.clues.some((entry) => entry.playerId === me.playerId);
+  const canWrite = Boolean(self?.alive) && !spoke && !allSpoke;
   const ordered = room.clueOrder
     .map((id) => room.players.find((player) => player.id === id))
     .filter((player): player is NonNullable<typeof player> => Boolean(player));
 
+  // Quand son tour arrive, le champ (et son éventuel brouillon) passe au premier plan —
+  // sauf si le joueur est en train d'écrire ailleurs (le chat, par exemple).
+  useEffect(() => {
+    if (!myTurn) return;
+    const active = document.activeElement;
+    if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+    inputRef.current?.focus();
+  }, [myTurn]);
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    if (!myTurn) return;
     act({ type: 'submitClue', text });
     setText('');
   };
@@ -58,36 +78,43 @@ export function Clues({ view, act }: ScreenProps) {
         </ol>
       </section>
 
-      {myTurn && (
-        <form className="uc-card uc-card--turn" onSubmit={submit} data-enter>
+      {/* Le même formulaire sert avant (brouillon) et pendant son tour : le texte tapé n'est jamais perdu. */}
+      {canWrite && (
+        <form className={cx('uc-card', myTurn ? 'uc-card--turn' : 'uc-card--draft')} onSubmit={submit} data-enter>
           <div className="field">
-            <label htmlFor="uc-clue">Ton indice (facultatif si tu le dis à voix haute)</label>
+            <label htmlFor="uc-clue">
+              {myTurn ? 'Ton indice (facultatif si tu le dis à voix haute)' : 'Prépare ton indice en attendant ton tour'}
+            </label>
             <input
+              ref={inputRef}
               id="uc-clue"
               type="text"
               value={text}
-              maxLength={40}
+              maxLength={LIMITS.clueMax}
               autoComplete="off"
-              autoFocus
               onChange={(event) => setText(event.target.value)}
               aria-describedby="uc-clue-hint"
             />
             <p id="uc-clue-hint" className="field__hint">
-              Une seule idée, sans citer ton mot.
+              {myTurn
+                ? 'Une seule idée, sans citer ton mot.'
+                : 'Personne ne le voit avant que tu l’envoies, et tu pourras encore le modifier quand ce sera ton tour.'}
             </p>
           </div>
-          <Button type="submit">J’ai donné mon indice</Button>
+          <Button type="submit" disabled={!myTurn} aria-describedby="uc-clue-hint">
+            {myTurn ? 'J’ai donné mon indice' : 'Envoi possible à ton tour'}
+          </Button>
         </form>
       )}
 
-      {!allSpoke && !myTurn && self?.alive && (
+      {!allSpoke && !myTurn && self?.alive && spoke && (
         <p className="uc-waiting" role="status" data-enter>
           <span className="uc-dots" aria-hidden="true" /> On écoute {speaker?.name ?? 'le prochain joueur'}…
         </p>
       )}
       {!self?.alive && (
         <p className="uc-waiting" data-enter>
-          Tu es éliminé : tu observes la suite.
+          {spectator ? 'Tu es spectateur : tu suis les indices de la table.' : 'Tu es éliminé : tu observes la suite.'}
         </p>
       )}
 

@@ -7,6 +7,7 @@ import { useRoom } from '@/lib/undercover/client';
 import type { ClientAction, RoomView, ThemeInfo } from '@/lib/undercover/types';
 import { TLink } from '../layout/PageTransition';
 import { ButtonLink } from '../ui/Button';
+import { Chat } from './Chat';
 import { Clues } from './Clues';
 import { Elimination } from './Elimination';
 import { GameOver, WINNER_TITLES } from './GameOver';
@@ -26,7 +27,9 @@ function announcement(view: RoomView): string {
     case 'LOBBY':
       return `Lobby, manche ${room.round}. ${room.players.filter((p) => !p.left).length} joueurs présents.`;
     case 'REVEAL':
-      return 'La partie commence. Retourne ta carte en secret pour découvrir ton rôle.';
+      return me.role
+        ? 'La partie commence. Retourne ta carte en secret pour découvrir ton rôle.'
+        : 'La partie commence. Les joueurs découvrent leur rôle en secret.';
     case 'CLUES':
       if (room.currentSpeakerId === null) return 'Tout le monde a donné son indice. En attente du host pour lancer le vote.';
       return room.currentSpeakerId === me.playerId
@@ -76,6 +79,32 @@ function MyWord({ view }: { view: RoomView }) {
           )}
         </p>
       )}
+    </div>
+  );
+}
+
+/** Bandeau des spectateurs : où ils en sont dans la file, et le choix de jouer ou de regarder. */
+function SpectatorBar({ view, act }: { view: RoomView; act: (action: ClientAction) => Promise<void> }) {
+  const { room, me } = view;
+  if (me.seat === 'player') return null;
+  const lobby = room.phase === 'LOBBY';
+  const position = room.spectators.find((spectator) => spectator.id === me.playerId)?.queuePosition ?? null;
+
+  let text = 'Mode spectateur : tu regardes la partie sans jouer.';
+  if (me.seat === 'queue') {
+    text = lobby
+      ? `La table est pleine : tu es n°${position ?? '?'} dans la file d’attente, tu joues dès qu’une place se libère.`
+      : `Tu suis cette manche en spectateur. File d’attente : n°${position ?? '?'}, tu joues dès la prochaine manche.`;
+  }
+
+  return (
+    <div className="uc-spectator" role="status">
+      <p>
+        <span className="uc-tag">Spectateur</span> {text}
+      </p>
+      <button type="button" className="uc-link-button" onClick={() => act({ type: 'seat', play: me.seat !== 'queue' })}>
+        {me.seat === 'queue' ? 'Juste regarder' : lobby ? 'Rejoindre la table' : 'Jouer la prochaine manche'}
+      </button>
     </div>
   );
 }
@@ -207,10 +236,14 @@ export function RoomClient({ code, themes }: { code: string; themes: ThemeInfo[]
           </div>
         </header>
 
+        <SpectatorBar view={view} act={act} />
+
         <div ref={stageRef} className="uc__stage">
           <PhaseScreen view={view} act={act} themes={themes} />
         </div>
       </div>
+
+      <Chat view={view} send={send} />
 
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {announcement(view)}

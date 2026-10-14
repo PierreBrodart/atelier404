@@ -18,15 +18,18 @@ export function GameOver({ view, act }: ScreenProps) {
   if (!outcome || !reveal) return null;
 
   const players = room.players.filter((player) => !player.left || reveal.roles[player.id]);
-  const host = room.players.find((player) => player.isHost);
+  const host = room.players.find((player) => player.isHost) ?? room.spectators.find((spectator) => spectator.isHost);
   const iWon = outcome.winnerIds.includes(me.playerId);
+  let verdict = iWon ? 'Tu fais partie des vainqueurs. 🎉' : 'Pas cette fois : la prochaine sera la bonne.';
+  if (me.seat === 'queue') verdict = 'Tu regardais cette manche : à toi de jouer à la prochaine !';
+  else if (me.seat === 'watch') verdict = 'Tu regardais cette manche en spectateur.';
 
   return (
     <div className="uc-over">
       <Confetti />
       <PhaseHead kicker={`Manche ${room.round} · Fin de partie`} title={WINNER_TITLES[outcome.winner]}>
         <p>{outcome.reason}</p>
-        <p className="uc-over__me">{iWon ? 'Tu fais partie des vainqueurs. 🎉' : 'Pas cette fois : la prochaine sera la bonne.'}</p>
+        <p className="uc-over__me">{verdict}</p>
       </PhaseHead>
 
       <section className="uc-words" aria-label="Les mots de la manche" data-enter>
@@ -59,7 +62,11 @@ export function GameOver({ view, act }: ScreenProps) {
         </section>
 
         <section className="uc-card" aria-label="Classement" data-enter>
-          <Scoreboard players={room.players} roundScores={room.roundScores} />
+          <Scoreboard
+            players={[...room.players, ...room.spectators.filter((spectator) => spectator.score > 0)]}
+            roundScores={room.roundScores}
+          />
+          <p className="uc-hint">Tout le camp gagnant marque : les survivants ont tous les points, les éliminés la moitié.</p>
         </section>
       </div>
 

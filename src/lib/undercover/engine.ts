@@ -1,6 +1,6 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import { getTheme, themes } from '@/data/undercover';
-import { LIMITS, SKIP_VOTE, UNDERCOVER_COUNT, composition, normalizeComposition, normalizeWord } from './rules';
+import { LIMITS, SKIP_VOTE, composition, normalizeComposition, normalizeWord } from './rules';
 import { scoreRound } from './scoring';
 import type {
   ActionResult,
@@ -60,6 +60,9 @@ export function createPlayer(name: string): ServerPlayer {
     token: newId(16),
     name,
     joinedAt: Date.now(),
+    seat: 'player',
+    queuedAt: null,
+    recentChats: [],
     connections: 0,
     disconnectedAt: null,
     away: false,
@@ -73,7 +76,7 @@ export function createRoom(code: string, host: ServerPlayer): Room {
     code,
     hostId: host.id,
     players: [host],
-    settings: { themeId: 'random', revealRoles: true, undercoverCount: UNDERCOVER_COUNT, mrWhiteCount: 0 },
+    settings: { themeId: 'random', revealRoles: true, undercoverCount: 1, mrWhiteCount: 0 },
     phase: 'LOBBY',
     round: 1,
     turn: 0,
@@ -81,6 +84,8 @@ export function createRoom(code: string, host: ServerPlayer): Room {
     scores: { [host.id]: 0 },
     game: null,
     usedPairs: [],
+    chat: [],
+    chatSeq: 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -88,7 +93,16 @@ export function createRoom(code: string, host: ServerPlayer): Room {
 
 // ——— Requêtes ————————————————————————————————————————————————
 
+/** Toutes les personnes encore dans la room : joueurs ET spectateurs. */
 export const activePlayers = (room: Room) => room.players.filter((player) => !player.left);
+/** Les joueurs assis à la table (hors spectateurs). */
+export const seatedPlayers = (room: Room) => activePlayers(room).filter((player) => player.seat === 'player');
+export const isSpectator = (player: ServerPlayer) => player.seat !== 'player';
+/** File d'attente, dans l'ordre d'arrivée. */
+export const queuedPlayers = (room: Room) =>
+  activePlayers(room)
+    .filter((player) => player.seat === 'queue')
+    .sort((a, b) => (a.queuedAt ?? 0) - (b.queuedAt ?? 0));
 export const findPlayer = (room: Room, id: string) => room.players.find((player) => player.id === id);
 
 /** Un joueur « absent » ne bloque pas la progression de la partie. */
@@ -97,7 +111,7 @@ const isAbsent = (room: Room, id: string) => {
   return !player || player.left || player.away;
 };
 
-const isPlaying = (phase: GamePhase) => phase !== 'LOBBY' && phase !== 'GAME_OVER';
+export const isPlaying = (phase: GamePhase) => phase !== 'LOBBY' && phase !== 'GAME_OVER';
 
 function touch(room: Room, phase?: GamePhase) {
   if (phase) {
@@ -109,18 +123,48 @@ function touch(room: Room, phase?: GamePhase) {
 
 // ——— Lobby ———————————————————————————————————————————————————
 
-/** Remet les réglages dans un état valide pour le nombre de joueurs actuel. */
-export function normalizeSettings(room: Room): void {
-  const count = activePlayers(room).length;
-  const themeId = room.settings.themeId === 'random' || getTheme(room.settings.themeId) ? room.settings.themeId : 'random';
-  room.settings = { ...room.settings, themeId, ...normalizeComposition(room.settings.mrWhiteCount > 0, count) };
+/**
+ * Remet les réglages dans un état valide pour le nombre de joueurs assis.
+ * `keep` : réglage que le host vient de modifier, conservé si Undercover et Mr White ne tiennent pas ensemble.
+ */
+export function normalizeSettings(room: Room, keep?: 'undercover' | 'mrWhite'): void {
+  const count = seatedPlayers(room).length;
+  const { settings } = room;
+  const themeId = settings.themeId === 'random' || getTheme(settings.themeId) ? settings.themeId : 'random';
+  room.settings = {
+    ...settings,
+    themeId,
+    ...normalizeComposition(settings.undercoverCount, settings.mrWhiteCount > 0, count, keep),
+  };
 }
 
+/** En lobby, assied les premiers de la file d'attente tant qu'il reste des places à la table. */
+function fillSeats(room: Room): void {
+  if (room.phase !== 'LOBBY') return;
+  let free = LIMITS.maxPlayers - seatedPlayers(room).length;
+  for (const player of queuedPlayers(room)) {
+    if (free <= 0) break;
+    player.seat = 'player';
+    player.queuedAt = null;
+    free -= 1;
+  }
+}
+
+/**
+ * Nouvelle arrivée : assise à la table en lobby s'il reste de la place, sinon spectatrice en file
+ * d'attente (partie en cours ou table pleine) — elle jouera dès la prochaine manche qui a une place.
+ */
 export function addPlayer(room: Room, player: ServerPlayer): ActionResult {
-  if (room.phase !== 'LOBBY') return fail('La partie est déjà lancée : reviens à la prochaine manche !');
-  if (activePlayers(room).length >= LIMITS.maxPlayers) return fail(`La room est pleine (${LIMITS.maxPlayers} joueurs).`);
-  const taken = activePlayers(room).some((other) => other.name.toLowerCase() === player.name.toLowerCase());
+  const others = activePlayers(room);
+  const taken = others.some((other) => other.name.toLowerCase() === player.name.toLowerCase());
   if (taken) return fail('Ce prénom est déjà pris dans la room.');
+
+  const seated = room.phase === 'LOBBY' && seatedPlayers(room).length < LIMITS.maxPlayers;
+  if (!seated && others.filter(isSpectator).length >= LIMITS.maxSpectators) {
+    return fail(`La room est pleine (${LIMITS.maxPlayers} joueurs et ${LIMITS.maxSpectators} spectateurs).`);
+  }
+  player.seat = seated ? 'player' : 'queue';
+  player.queuedAt = seated ? null : Date.now();
 
   room.players.push(player);
   room.scores[player.id] = 0;
@@ -129,20 +173,25 @@ export function addPlayer(room: Room, player: ServerPlayer): ActionResult {
   return OK;
 }
 
-/** Donne le rôle de host à un autre joueur (en priorité un joueur connecté). */
+/** Donne le rôle de host à quelqu'un d'autre : un joueur connecté d'abord, puis un spectateur connecté. */
 export function transferHost(room: Room): void {
   const candidates = activePlayers(room).filter((player) => player.id !== room.hostId);
-  const next = candidates.find((player) => player.connections > 0) ?? candidates[0];
+  const next =
+    candidates.find((player) => player.connections > 0 && !isSpectator(player)) ??
+    candidates.find((player) => player.connections > 0) ??
+    candidates.find((player) => !isSpectator(player)) ??
+    candidates[0];
   if (next) room.hostId = next.id;
 }
 
-/** Un joueur quitte (volontairement ou parce qu'il est resté déconnecté trop longtemps). */
+/** Quelqu'un quitte (volontairement ou parce qu'il est resté déconnecté trop longtemps). */
 export function removePlayer(room: Room, playerId: string): void {
   const player = findPlayer(room, playerId);
   if (!player || player.left) return;
   const wasHost = room.hostId === playerId;
 
-  if (room.phase === 'LOBBY') {
+  // En lobby, ou pour un spectateur (qui n'a aucune donnée de manche) : on l'efface simplement.
+  if (room.phase === 'LOBBY' || isSpectator(player)) {
     room.players = room.players.filter((other) => other.id !== playerId);
     delete room.scores[playerId];
   } else {
@@ -151,14 +200,65 @@ export function removePlayer(room: Room, playerId: string): void {
   }
 
   if (wasHost) transferHost(room);
-  if (room.phase === 'LOBBY') normalizeSettings(room);
+  if (room.phase === 'LOBBY') {
+    fillSeats(room);
+    normalizeSettings(room);
+  }
   touch(room);
   reconcile(room);
 }
 
 function updateSettings(room: Room, settings: Partial<GameSettings>): ActionResult {
   room.settings = { ...room.settings, ...settings };
-  normalizeSettings(room);
+  normalizeSettings(room, settings.undercoverCount !== undefined ? 'undercover' : 'mrWhite');
+  touch(room);
+  return OK;
+}
+
+/**
+ * Jouer ou regarder. Un spectateur qui veut jouer entre dans la file (assis tout de suite en lobby
+ * s'il reste une place). Un joueur ne peut passer spectateur qu'en lobby : en pleine manche, il a un rôle.
+ */
+function changeSeat(room: Room, player: ServerPlayer, play: boolean): ActionResult {
+  if (play) {
+    if (player.seat === 'player') return OK;
+    if (player.seat === 'watch') {
+      player.seat = 'queue';
+      player.queuedAt = Date.now();
+    }
+    fillSeats(room);
+  } else {
+    if (player.seat === 'watch') return OK;
+    if (player.seat === 'player' && room.phase !== 'LOBBY') {
+      return fail('Tu joues cette manche : tu pourras passer spectateur au retour dans le lobby.');
+    }
+    player.seat = 'watch';
+    player.queuedAt = null;
+    fillSeats(room);
+  }
+  if (room.phase === 'LOBBY') normalizeSettings(room);
+  touch(room);
+  return OK;
+}
+
+// ——— Chat ————————————————————————————————————————————————————
+
+function postChat(room: Room, player: ServerPlayer, text: string): ActionResult {
+  const now = Date.now();
+  player.recentChats = player.recentChats.filter((at) => now - at < LIMITS.chatWindowMs);
+  if (player.recentChats.length >= LIMITS.chatBurst) return fail('Doucement : attends un peu avant le prochain message.');
+  player.recentChats.push(now);
+
+  room.chatSeq += 1;
+  room.chat.push({
+    id: room.chatSeq,
+    playerId: player.id,
+    name: player.name,
+    text,
+    // Pendant une manche, un éliminé ou un spectateur ne parle qu'aux autres éliminés et spectateurs.
+    ghost: isPlaying(room.phase) && !room.game?.alive.includes(player.id),
+  });
+  if (room.chat.length > LIMITS.chatHistory) room.chat.splice(0, room.chat.length - LIMITS.chatHistory);
   touch(room);
   return OK;
 }
@@ -190,7 +290,7 @@ function startGame(room: Room, playerId: string): ActionResult {
   if (room.hostId !== playerId) return fail('Seul le host peut lancer la partie.');
   if (room.phase !== 'LOBBY') return fail('La partie est déjà lancée.');
 
-  const players = activePlayers(room);
+  const players = seatedPlayers(room);
   if (players.length < LIMITS.minPlayers) return fail(`Il faut au moins ${LIMITS.minPlayers} joueurs.`);
   normalizeSettings(room);
   const { undercoverCount, mrWhiteCount } = room.settings;
@@ -243,8 +343,10 @@ function newRound(room: Room, playerId: string): ActionResult {
   room.game = null;
   room.round += 1;
   room.turn = 0;
-  normalizeSettings(room);
   touch(room, 'LOBBY');
+  // Retour au lobby : la file d'attente prend les places libres (dans l'ordre d'arrivée).
+  fillSeats(room);
+  normalizeSettings(room);
   return OK;
 }
 
@@ -342,7 +444,7 @@ function finish(room: Room, outcome: Outcome) {
   const game = room.game;
   if (!game) return;
   game.outcome = outcome;
-  game.roundScores = scoreRound(outcome, game.assignments);
+  game.roundScores = scoreRound(outcome, game.assignments, game.alive);
   for (const [id, points] of Object.entries(game.roundScores)) room.scores[id] = (room.scores[id] ?? 0) + points;
   touch(room, 'GAME_OVER');
 }
@@ -354,13 +456,16 @@ const idsWithRole = (game: GameData, role: Role, aliveOnly: boolean) =>
     .filter(([id, assignment]) => assignment.role === role && (!aliveOnly || game.alive.includes(id)))
     .map(([id]) => id);
 
-/** Victoire des imposteurs (parité, ou tours sans élimination). */
+/**
+ * Victoire des imposteurs (parité, ou tours sans élimination). S'il reste un Undercover, tout le camp des
+ * imposteurs gagne, éliminés compris (ils marquent moins, voir scoring.ts) ; sinon Mr White gagne seul.
+ */
 function impostorOutcome(game: GameData, reason: string): Outcome {
-  const undercovers = idsWithRole(game, 'UNDERCOVER', true);
-  const whites = idsWithRole(game, 'MR_WHITE', true);
-  if (undercovers.length > 0) {
-    return { winner: 'UNDERCOVER', winnerIds: [...undercovers, ...whites], reason, byGuess: false };
+  if (idsWithRole(game, 'UNDERCOVER', true).length > 0) {
+    const team = [...idsWithRole(game, 'UNDERCOVER', false), ...idsWithRole(game, 'MR_WHITE', false)];
+    return { winner: 'UNDERCOVER', winnerIds: team, reason, byGuess: false };
   }
+  const whites = idsWithRole(game, 'MR_WHITE', true);
   return {
     winner: 'MR_WHITE',
     winnerIds: whites,
@@ -513,6 +618,12 @@ export function applyAction(room: Room, playerId: string, action: ClientAction):
     case 'leave':
       removePlayer(room, playerId);
       return OK;
+
+    case 'seat':
+      return changeSeat(room, player, action.play);
+
+    case 'chat':
+      return postChat(room, player, action.text);
 
     case 'ready': {
       if (!game || room.phase !== 'REVEAL') return fail('Rien à valider maintenant.');

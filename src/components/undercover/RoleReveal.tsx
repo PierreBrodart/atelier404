@@ -12,7 +12,32 @@ export function RoleReveal({ view, act }: ScreenProps) {
   const ready = Boolean(self?.ready);
   const players = room.players.filter((player) => !player.left);
 
-  if (!me.role) return null;
+  const readyList = (
+    <section className="uc-card" aria-labelledby="uc-ready-title" data-enter>
+      <h3 id="uc-ready-title" className="uc-card__title">
+        Qui est prêt ?
+      </h3>
+      <ul className="uc-players">
+        {players.map((player, index) => (
+          <PlayerChip key={player.id} player={player} meId={me.playerId} index={index}>
+            <StatusMark state={player.ready ? 'done' : 'wait'} labels={{ done: 'est prêt', wait: 'n’est pas encore prêt' }} />
+          </PlayerChip>
+        ))}
+      </ul>
+    </section>
+  );
+
+  // Spectateur : ni carte ni mot, seulement la progression de la table.
+  if (!me.role) {
+    return (
+      <div className="uc-reveal">
+        <PhaseHead kicker={`Manche ${room.round} · Étape secrète`} title="Distribution des rôles.">
+          <p>Chaque joueur découvre son rôle en secret. Tu es spectateur : tu ne reçois pas de mot, tu suis la manche.</p>
+        </PhaseHead>
+        {readyList}
+      </div>
+    );
+  }
   const hideRole = !room.settings.revealRoles;
 
   return (
@@ -41,18 +66,7 @@ export function RoleReveal({ view, act }: ScreenProps) {
         </Button>
       </div>
 
-      <section className="uc-card" aria-labelledby="uc-ready-title" data-enter>
-        <h3 id="uc-ready-title" className="uc-card__title">
-          Qui est prêt ?
-        </h3>
-        <ul className="uc-players">
-          {players.map((player, index) => (
-            <PlayerChip key={player.id} player={player} meId={me.playerId} index={index}>
-              <StatusMark state={player.ready ? 'done' : 'wait'} labels={{ done: 'est prêt', wait: 'n’est pas encore prêt' }} />
-            </PlayerChip>
-          ))}
-        </ul>
-      </section>
+      {readyList}
     </div>
   );
 }

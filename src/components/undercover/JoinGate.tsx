@@ -35,13 +35,19 @@ export function JoinGate({ code, peek, join }: JoinGateProps) {
   };
 
   const joinable = peek?.joinable ?? false;
+  const spectator = joinable && Boolean(peek?.spectator);
 
   return (
     <section className="uc" data-phase="LOBBY">
       <div className="uc__inner container">
         <div ref={ref} className="uc__stage uc__stage--narrow">
-          <PhaseHead kicker={`Room ${code}${peek ? ` · ${peek.playerCount} / ${peek.max} joueurs` : ''}`} title="Rejoindre la partie.">
-            <p>{joinable ? 'Choisis ton prénom pour entrer dans la room.' : (peek?.reason ?? 'Cette room n’est pas accessible.')}</p>
+          <PhaseHead
+            kicker={`Room ${code}${peek ? ` · ${peek.playerCount} / ${peek.max} joueurs` : ''}`}
+            title={spectator ? 'Entrer en spectateur.' : 'Rejoindre la partie.'}
+          >
+            {joinable && !spectator && <p>Choisis ton prénom pour entrer dans la room.</p>}
+            {spectator && <p>{peek?.reason} Choisis ton prénom pour entrer.</p>}
+            {!joinable && <p>{peek?.reason ?? 'Cette room n’est pas accessible.'}</p>}
           </PhaseHead>
 
           {joinable ? (
@@ -67,7 +73,7 @@ export function JoinGate({ code, peek, join }: JoinGateProps) {
                 )}
               </div>
               <Button type="submit" disabled={busy || name.trim().length < 2}>
-                {busy ? 'Connexion…' : 'Rejoindre'}
+                {busy ? 'Connexion…' : spectator ? 'Entrer en spectateur' : 'Rejoindre'}
               </Button>
             </form>
           ) : (

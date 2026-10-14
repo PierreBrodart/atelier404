@@ -48,7 +48,7 @@ export interface WordPair {
 
 export interface GameSettings {
   themeId: ThemeChoice;
-  /** Toujours 1 : il y a exactement un Undercover, ce n'est pas configurable. */
+  /** Au moins 1, borné par la taille de la table (voir `maxImpostors` dans rules.ts). */
   undercoverCount: number;
   /** 0 ou 1 : Mr White est une option, pas un compteur. Peut coexister avec l'Undercover. */
   mrWhiteCount: number;
@@ -98,7 +98,17 @@ export type ClientAction =
   | { type: 'next' }
   | { type: 'force' }
   | { type: 'newRound' }
+  | { type: 'seat'; play: boolean }
+  | { type: 'chat'; text: string }
   | { type: 'leave' };
+
+/**
+ * Place d'une personne dans la room :
+ *  - `player` : joue (en lobby : jouera la prochaine manche) ;
+ *  - `queue`  : spectateur en file d'attente, assis automatiquement dès qu'une place se libère en lobby ;
+ *  - `watch`  : spectateur qui regarde seulement (jamais assis automatiquement).
+ */
+export type Seat = 'player' | 'queue' | 'watch';
 
 // ——— 2. Serveur uniquement ———————————————————————————————————————
 
@@ -108,6 +118,11 @@ export interface ServerPlayer {
   token: string;
   name: string;
   joinedAt: number;
+  seat: Seat;
+  /** Entrée dans la file d'attente (ordre d'arrivée), null hors file */
+  queuedAt: number | null;
+  /** Horodatages des derniers messages de chat (limitation de débit) */
+  recentChats: number[];
   /** Nombre de flux SSE ouverts (plusieurs onglets possibles) */
   connections: number;
   disconnectedAt: number | null;
@@ -172,9 +187,23 @@ export interface GameData {
   roundScores: Record<string, number>;
 }
 
+export interface ChatMessage {
+  id: number;
+  playerId: string;
+  /** Prénom au moment de l'envoi (l'auteur peut avoir quitté la room depuis) */
+  name: string;
+  text: string;
+  /**
+   * Message d'un éliminé ou d'un spectateur pendant une manche : invisible des joueurs encore en vie
+   * jusqu'à la fin de la manche (un éliminé connaît son mot, il ne doit pas pouvoir le souffler).
+   */
+  ghost: boolean;
+}
+
 export interface Room {
   code: string;
   hostId: string;
+  /** Joueurs ET spectateurs (voir `ServerPlayer.seat`) */
   players: ServerPlayer[];
   settings: GameSettings;
   phase: GamePhase;
@@ -186,6 +215,9 @@ export interface Room {
   game: GameData | null;
   /** Paires déjà jouées dans cette room (évite les répétitions) */
   usedPairs: string[];
+  /** Derniers messages du chat (les plus anciens sont supprimés au-delà de `LIMITS.chatHistory`) */
+  chat: ChatMessage[];
+  chatSeq: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -210,6 +242,17 @@ export interface PublicPlayer {
   role: Role | null;
 }
 
+export interface PublicSpectator {
+  id: string;
+  name: string;
+  isHost: boolean;
+  connected: boolean;
+  /** Points des manches déjà jouées (un spectateur a pu jouer avant) */
+  score: number;
+  /** Position dans la file d'attente (1 = prochain assis), null s'il regarde seulement */
+  queuePosition: number | null;
+}
+
 export interface PublicClue {
   playerId: string;
   text: string;
@@ -225,8 +268,11 @@ export interface PublicRoom {
   hostId: string;
   settings: GameSettings;
   themeLabel: string | null;
+  /** Joueurs assis à la table (les participants de la manche une fois lancée) */
   players: PublicPlayer[];
-  limits: { min: number; max: number };
+  /** Spectateurs : file d'attente puis simples observateurs */
+  spectators: PublicSpectator[];
+  limits: { min: number; max: number; spectators: number };
   composition: { civil: number; undercover: number; mrWhite: number; valid: boolean };
   clueOrder: string[];
   currentSpeakerId: string | null;
@@ -255,6 +301,7 @@ export interface PublicRoom {
 export interface PrivateView {
   playerId: string;
   isHost: boolean;
+  seat: Seat;
   /** Rôle et mot du joueur lui-même (null en lobby) */
   role: Role | null;
   word: string | null;
@@ -262,10 +309,19 @@ export interface PrivateView {
   myVote: string | null;
 }
 
-/** Ce que reçoit un client : la vue publique + SA vue privée. */
+export interface PublicChatMessage {
+  id: number;
+  playerId: string;
+  name: string;
+  text: string;
+  ghost: boolean;
+}
+
+/** Ce que reçoit un client : la vue publique + SA vue privée + le chat qu'il a le droit de lire. */
 export interface RoomView {
   room: PublicRoom;
   me: PrivateView;
+  chat: PublicChatMessage[];
 }
 
 // ——— API ————————————————————————————————————————————————————
@@ -279,6 +335,8 @@ export interface JoinResponse {
 export interface PeekResponse {
   exists: boolean;
   joinable: boolean;
+  /** true si l'arrivant entrera comme spectateur (partie en cours ou table pleine) */
+  spectator: boolean;
   reason: string | null;
   phase: GamePhase | null;
   playerCount: number;

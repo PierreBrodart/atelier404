@@ -1,6 +1,6 @@
 import { LIMITS, composition } from './rules';
-import { currentSpeaker } from './engine';
-import type { PublicPlayer, PublicRoom, Role, Room, RoomView } from './types';
+import { currentSpeaker, isPlaying, isSpectator, queuedPlayers } from './engine';
+import type { PublicChatMessage, PublicPlayer, PublicRoom, PublicSpectator, Role, Room, RoomView } from './types';
 
 /**
  * Projection d'une Room vers ce qu'un joueur a le droit de voir.
@@ -11,12 +11,25 @@ import type { PublicPlayer, PublicRoom, Role, Room, RoomView } from './types';
  *  - le rôle d'un joueur ÉLIMINÉ (après son élimination) ;
  *  - tous les rôles et les deux mots en fin de manche (GAME_OVER).
  * Les jetons d'authentification et les votes en cours ne sont jamais exposés.
+ * Les spectateurs reçoivent la même vue publique que tout le monde, sans rôle ni mot.
  */
 
 function publicRoom(room: Room): PublicRoom {
   const game = room.game;
   const gameOver = room.phase === 'GAME_OVER';
-  const players = room.players.filter((player) => room.phase !== 'LOBBY' || !player.left);
+  const players = room.players.filter((player) => !isSpectator(player) && (room.phase !== 'LOBBY' || !player.left));
+  const queue = queuedPlayers(room).map((player) => player.id);
+  const spectators: PublicSpectator[] = room.players
+    .filter((player) => isSpectator(player) && !player.left)
+    .map((player) => ({
+      id: player.id,
+      name: player.name,
+      isHost: player.id === room.hostId,
+      connected: player.connections > 0,
+      score: room.scores[player.id] ?? 0,
+      queuePosition: player.seat === 'queue' ? queue.indexOf(player.id) + 1 : null,
+    }))
+    .sort((a, b) => (a.queuePosition ?? Infinity) - (b.queuePosition ?? Infinity));
 
   const revealedRole = (id: string): Role | null => {
     if (!game) return null;
@@ -59,7 +72,8 @@ function publicRoom(room: Room): PublicRoom {
     settings: { ...room.settings },
     themeLabel: game ? game.themeLabel : null,
     players: publicPlayers,
-    limits: { min: LIMITS.minPlayers, max: LIMITS.maxPlayers },
+    spectators,
+    limits: { min: LIMITS.minPlayers, max: LIMITS.maxPlayers, spectators: LIMITS.maxSpectators },
     composition: { ...comp },
     clueOrder: room.phase === 'CLUES' || room.phase === 'VOTING' ? [...(game?.clueOrder ?? [])] : [],
     currentSpeakerId: currentSpeaker(room),
@@ -113,6 +127,23 @@ function publicRoom(room: Room): PublicRoom {
   };
 }
 
+/**
+ * Chat lisible par un joueur. Pendant une manche, les messages des éliminés et des spectateurs (`ghost`)
+ * ne sont lus que par les éliminés et les spectateurs ; tout redevient visible en fin de manche.
+ */
+function chatFor(room: Room, playerId: string): PublicChatMessage[] {
+  const hidesGhosts = isPlaying(room.phase) && Boolean(room.game?.alive.includes(playerId));
+  return room.chat
+    .filter((message) => !message.ghost || !hidesGhosts)
+    .map((message) => ({
+      id: message.id,
+      playerId: message.playerId,
+      name: message.name,
+      text: message.text,
+      ghost: message.ghost,
+    }));
+}
+
 /** Vue complète destinée à UN joueur (publique + privée). */
 export function toRoomView(room: Room, playerId: string): RoomView {
   const assignment = room.game?.assignments[playerId];
@@ -124,9 +155,11 @@ export function toRoomView(room: Room, playerId: string): RoomView {
     me: {
       playerId,
       isHost: room.hostId === playerId,
+      seat: room.players.find((player) => player.id === playerId)?.seat ?? 'watch',
       role: assignment?.role ?? null,
       word: assignment?.word ?? null,
       myVote,
     },
+    chat: chatFor(room, playerId),
   };
 }

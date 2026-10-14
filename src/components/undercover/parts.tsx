@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react';
 import { cx } from '@/lib/cx';
 import { gsap } from '@/lib/gsap';
 import { ROLE_LABELS } from '@/lib/undercover/rules';
-import type { ClientAction, PastClue, PublicPlayer, Role, RoomView } from '@/lib/undercover/types';
+import type { ClientAction, PastClue, PublicPlayer, PublicSpectator, Role, RoomView } from '@/lib/undercover/types';
 import { usePrefersReducedMotion } from '@/lib/useReducedMotion';
 import { Split } from '../ui/Split';
 
@@ -38,7 +38,7 @@ export function PhaseHead({ kicker, title, children }: { kicker: string; title: 
 // ——— Joueurs ——————————————————————————————————————————————————
 
 const AVATAR_TONES = 5;
-const toneOf = (id: string) => [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % AVATAR_TONES;
+export const toneOf = (id: string) => [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % AVATAR_TONES;
 
 interface PlayerChipProps {
   player: PublicPlayer;
@@ -75,6 +75,36 @@ export function PlayerChip({ player, meId, index = 0, score, children }: PlayerC
       </span>
       {children}
     </li>
+  );
+}
+
+/** File d'attente puis simples spectateurs (déjà triés par le serveur). */
+export function SpectatorList({ spectators, meId }: { spectators: PublicSpectator[]; meId: string }) {
+  return (
+    <ul className="uc-players uc-players--spectators">
+      {spectators.map((spectator, index) => (
+        <li
+          key={spectator.id}
+          className={cx('uc-chip', 'uc-chip--watch', spectator.id === meId && 'uc-chip--me', !spectator.connected && 'uc-chip--offline')}
+          style={{ '--i': index } as CSSProperties}
+        >
+          <span className={`uc-avatar uc-avatar--${toneOf(spectator.id)}`} aria-hidden="true">
+            {spectator.name.slice(0, 1).toUpperCase()}
+          </span>
+          <span className="uc-chip__body">
+            <span className="uc-chip__name">{spectator.name}</span>
+            <span className="uc-chip__tags">
+              {spectator.isHost && <span className="uc-tag uc-tag--host">Host</span>}
+              {spectator.id === meId && <span className="uc-tag">Toi</span>}
+              <span className="uc-tag uc-tag--off">
+                {spectator.queuePosition ? `File n°${spectator.queuePosition}` : 'Spectateur'}
+              </span>
+              {!spectator.connected && <span className="uc-tag uc-tag--off">Reconnexion…</span>}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -191,9 +221,46 @@ export function Toggle({ label, checked, onChange, states, disabled }: TogglePro
   );
 }
 
+// ——— Compteur ————————————————————————————————————————————————
+
+interface StepperProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+  /** Noms des boutons pour les lecteurs d'écran, ex. « Un Undercover de moins » */
+  less: string;
+  more: string;
+}
+
+/** Compteur – / + : deux vrais boutons, et la valeur annoncée à chaque changement. */
+export function Stepper({ label, value, min, max, onChange, less, more }: StepperProps) {
+  const id = useId();
+  return (
+    <div className="uc-stepper" role="group" aria-labelledby={id}>
+      <button type="button" className="uc-stepper__button" aria-label={less} disabled={value <= min} onClick={() => onChange(value - 1)}>
+        <span aria-hidden="true">−</span>
+      </button>
+      <output className="uc-stepper__value" aria-live="polite">
+        {value}
+      </output>
+      <button type="button" className="uc-stepper__button" aria-label={more} disabled={value >= max} onClick={() => onChange(value + 1)}>
+        <span aria-hidden="true">+</span>
+      </button>
+      <span id={id} className="uc-stepper__label">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 // ——— Scores ——————————————————————————————————————————————————
 
-export function Scoreboard({ players, roundScores }: { players: PublicPlayer[]; roundScores?: Record<string, number> }) {
+/** Les spectateurs qui ont déjà marqué des points restent au classement. */
+type Ranked = Pick<PublicPlayer, 'id' | 'name' | 'score'> & { left?: boolean };
+
+export function Scoreboard({ players, roundScores }: { players: Ranked[]; roundScores?: Record<string, number> }) {
   const ranked = [...players].filter((player) => !player.left).sort((a, b) => b.score - a.score);
   const top = ranked[0]?.score ?? 0;
   const hasRound = roundScores && Object.keys(roundScores).length > 0;

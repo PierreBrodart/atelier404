@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useBrowserValue } from '@/lib/undercover/client';
-import { mrWhiteAvailable } from '@/lib/undercover/rules';
+import { maxImpostors } from '@/lib/undercover/rules';
 import type { ThemeInfo } from '@/lib/undercover/types';
 import { Button } from '../ui/Button';
-import { PhaseHead, PlayerChip, Scoreboard, Toggle, type ScreenProps } from './parts';
+import { PhaseHead, PlayerChip, Scoreboard, SpectatorList, Stepper, Toggle, type ScreenProps } from './parts';
 
 interface LobbyProps extends ScreenProps {
   themes: ThemeInfo[];
@@ -14,9 +14,24 @@ interface LobbyProps extends ScreenProps {
 function Settings({ view, act, themes }: LobbyProps) {
   const { room } = view;
   const count = room.players.filter((player) => !player.left).length;
-  const { themeId, mrWhiteCount, revealRoles } = room.settings;
-  const canMrWhite = mrWhiteAvailable(count);
+  const { themeId, undercoverCount, mrWhiteCount, revealRoles } = room.settings;
+  // Les Civils doivent rester strictement plus nombreux que les imposteurs (Undercover + Mr White).
+  const max = maxImpostors(count);
+  const maxUndercover = Math.max(1, max - mrWhiteCount);
+  const canMrWhite = mrWhiteCount > 0 || undercoverCount + 1 <= max;
   const update = (settings: Record<string, string | number | boolean>) => act({ type: 'updateSettings', settings });
+
+  let undercoverHint = 'Les Undercover ont tous le même mot, proche de celui des Civils.';
+  if (undercoverCount >= maxUndercover) {
+    undercoverHint =
+      mrWhiteCount > 0 && undercoverCount + 1 <= max
+        ? 'Retire Mr White pour ajouter un Undercover de plus.'
+        : `Maximum pour ${Math.max(count, room.limits.min)} joueurs : les Civils doivent rester plus nombreux que les imposteurs.`;
+  }
+  let mrWhiteHint = 'Mr White s’ajoute aux Undercover : lui n’a aucun mot.';
+  if (!canMrWhite) {
+    mrWhiteHint = max >= 2 ? 'Retire un Undercover pour ajouter Mr White.' : 'Pas assez de joueurs pour ajouter Mr White en plus de l’Undercover.';
+  }
 
   return (
     <div className="uc-settings">
@@ -42,19 +57,24 @@ function Settings({ view, act, themes }: LobbyProps) {
 
       <fieldset className="uc-fieldset">
         <legend>Imposteurs</legend>
-        <p className="uc-hint">Il y a toujours 1 Undercover.</p>
+        <Stepper
+          label="Undercover"
+          value={undercoverCount}
+          min={1}
+          max={maxUndercover}
+          onChange={(value) => update({ undercoverCount: value })}
+          less="Un Undercover de moins"
+          more="Un Undercover de plus"
+        />
+        <p className="uc-hint">{undercoverHint}</p>
         <Toggle
           label="Ajouter Mr White"
           checked={mrWhiteCount > 0}
-          disabled={!canMrWhite && mrWhiteCount === 0}
+          disabled={!canMrWhite}
           onChange={(value) => update({ mrWhiteCount: value ? 1 : 0 })}
           states={['Non', 'Oui']}
         />
-        <p className="uc-hint">
-          {canMrWhite
-            ? 'Mr White peut s’ajouter à l’Undercover : les autres joueurs sont Civils.'
-            : 'Pas assez de joueurs pour ajouter Mr White en plus de l’Undercover.'}
-        </p>
+        <p className="uc-hint">{mrWhiteHint}</p>
       </fieldset>
 
       <fieldset className="uc-fieldset">
@@ -110,7 +130,7 @@ function CopyButton({ label, value, done }: { label: string; value: string; done
 export function Lobby({ view, act, themes }: LobbyProps) {
   const { room, me } = view;
   const players = room.players.filter((player) => !player.left);
-  const host = players.find((player) => player.isHost);
+  const host = players.find((player) => player.isHost) ?? room.spectators.find((spectator) => spectator.isHost);
   const theme = themes.find((item) => item.id === room.settings.themeId);
   const enough = players.length >= room.limits.min;
   const origin = useBrowserValue(() => window.location.origin);
@@ -152,6 +172,21 @@ export function Lobby({ view, act, themes }: LobbyProps) {
               <PlayerChip key={player.id} player={player} meId={me.playerId} index={index} score={room.round > 1} />
             ))}
           </ul>
+          {me.seat === 'player' && (
+            <div className="uc-card__row">
+              <button type="button" className="uc-link-button" onClick={() => act({ type: 'seat', play: false })}>
+                Passer spectateur
+              </button>
+            </div>
+          )}
+          {room.spectators.length > 0 && (
+            <>
+              <h4 className="uc-card__sub">
+                Spectateurs <span className="uc-count">{room.spectators.length}</span>
+              </h4>
+              <SpectatorList spectators={room.spectators} meId={me.playerId} />
+            </>
+          )}
         </section>
 
         <section className="uc-card uc-card--settings" aria-labelledby="uc-settings-title" data-enter>
@@ -165,6 +200,10 @@ export function Lobby({ view, act, themes }: LobbyProps) {
               <div>
                 <dt>Thème</dt>
                 <dd>{room.settings.themeId === 'random' ? '🎲 Aléatoire' : `${theme?.icon ?? ''} ${theme?.label ?? room.settings.themeId}`}</dd>
+              </div>
+              <div>
+                <dt>Undercover</dt>
+                <dd>{room.settings.undercoverCount}</dd>
               </div>
               <div>
                 <dt>Mr White</dt>
@@ -204,7 +243,7 @@ export function Lobby({ view, act, themes }: LobbyProps) {
 
       {room.round > 1 && (
         <section className="uc-card" aria-label="Classement" data-enter>
-          <Scoreboard players={room.players} />
+          <Scoreboard players={[...room.players, ...room.spectators.filter((spectator) => spectator.score > 0)]} />
         </section>
       )}
     </div>

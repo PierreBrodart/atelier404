@@ -95,7 +95,7 @@ export function Voting({ view, act }: ScreenProps) {
 
       {!self?.alive && (
         <p className="uc-waiting" data-enter>
-          Tu es éliminé : tu ne votes plus.
+          {me.seat !== 'player' ? 'Tu es spectateur : tu suis le vote sans voter.' : 'Tu es éliminé : tu ne votes plus.'}
         </p>
       )}
 
