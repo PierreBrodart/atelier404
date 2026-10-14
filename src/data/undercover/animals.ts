@@ -11,7 +11,7 @@ export const animals = defineTheme('animaux', 'Animaux', '🐾', [
   ['Aigle', 'Faucon'],
   ['Dauphin', 'Requin'],
   ['Baleine', 'Orque'],
-  ['Crocodile', 'Alligator'],
+  ['Crocodile', 'Lézard'],
   ['Serpent', 'Lézard'],
   ['Grenouille', 'Crapaud'],
   ['Papillon', 'Libellule'],

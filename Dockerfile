@@ -38,10 +38,19 @@ COPY . .
 ARG NEXT_PUBLIC_SITE_URL=https://atelier404.fr
 ARG NEXT_PUBLIC_BASE_PATH=
 ARG NEXT_PUBLIC_FORM_ENDPOINT=
+# Plafond mémoire du build. Sur un petit VPS, sans plafond, Node laisse son tas grossir
+# jusqu'à ce que le noyau tue le process (exit 137) et le déploiement échoue à mi-chemin.
+# Avec un plafond, V8 déclenche ses passes de GC au lieu de gonfler. À baisser (768) sur une
+# machine à 1 Go, à monter si le build se plaint de « JavaScript heap out of memory ».
+ARG BUILD_MEMORY_MB=1536
+# Nombre de workers de prérendu (voir next.config.ts) : chaque worker charge toute l'app.
+ARG NEXT_BUILD_CPUS=2
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
     NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH \
     NEXT_PUBLIC_FORM_ENDPOINT=$NEXT_PUBLIC_FORM_ENDPOINT \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_BUILD_CPUS=$NEXT_BUILD_CPUS \
+    NODE_OPTIONS=--max-old-space-size=$BUILD_MEMORY_MB
 
 RUN npm run build
 

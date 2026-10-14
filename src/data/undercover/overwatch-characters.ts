@@ -1,0 +1,28 @@
+import { defineTheme } from './define';
+
+export const overwatchCharacters = defineTheme('overwatch-personnages', 'Personnages Overwatch', '🛡️', [
+  ['Tracer', 'Genji'],
+  ['Reaper', 'Sombra'],
+  ['Mercy', 'Ana'],
+  ['Widowmaker', 'Ashe'],
+  ['Reinhardt', 'Roadhog'],
+  ['D.Va', 'Zarya'],
+  ['Winston', 'Wrecking Ball'],
+  ['Soldier: 76', 'McCree'],
+  ['Pharah', 'Junkrat'],
+  ['Lucio', 'Zenyatta'],
+  ['Moira', 'Baptiste'],
+  ['Symmetra', 'Torbjörn'],
+  ['Hanzo', 'Genji'],
+  ['Bastion', 'Orisa'],
+  ['Sigma', 'Ramattra'],
+  ['Kiriko', 'Sombra'],
+  ['Brigitte', 'Mercy'],
+  ['Echo', 'Sojourn'],
+  ['Doomfist', 'Reinhardt'],
+  ['Cassidy', 'Ashe'],
+  ['Mei', 'Junkrat'],
+  ['Lifeweaver', 'Moira'],
+  ['Illari', 'Kiriko'],
+  ['Venture', 'Wrecking Ball'],
+]);

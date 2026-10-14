@@ -9,7 +9,11 @@ import { countries } from './countries';
 import { dailyLife } from './daily-life';
 import { drinks } from './drinks';
 import { food } from './food';
+import { gameCharacters } from './game-characters';
 import { jobs } from './jobs';
+import { lolCharacters } from './lol-characters';
+import { manga } from './manga';
+import { overwatchCharacters } from './overwatch-characters';
 import { movies } from './movies';
 import { music } from './music';
 import { nature } from './nature';
@@ -51,6 +55,10 @@ export const themes: Theme[] = [
   vehicles,
   clothing,
   dailyLife,
+  manga,
+  lolCharacters,
+  overwatchCharacters,
+  gameCharacters,
 ];
 
 export const getTheme = (id: string) => themes.find((theme) => theme.id === id);
