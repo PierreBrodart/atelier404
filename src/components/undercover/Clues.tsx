@@ -66,11 +66,14 @@ export function Clues({ view, act }: ScreenProps) {
             const clue = room.clues.find((entry) => entry.playerId === player.id);
             const state = clue ? 'done' : player.id === room.currentSpeakerId ? 'now' : 'wait';
             return (
-              <PlayerChip key={player.id} player={player} meId={me.playerId} index={index}>
-                {clue && !clue.skipped && (
-                  <span className="uc-clue-text">{clue.text ? `« ${clue.text} »` : 'a donné son indice à l’oral'}</span>
-                )}
-                {clue?.skipped && <span className="uc-clue-text">a passé son tour</span>}
+              <PlayerChip
+                key={player.id}
+                player={player}
+                meId={me.playerId}
+                index={index}
+                order={index + 1}
+                detail={clue && (clue.skipped ? 'a passé son tour' : clue.text ? `« ${clue.text} »` : 'a donné son indice à l’oral')}
+              >
                 <StatusMark state={state} labels={{ done: 'a donné son indice', wait: 'n’a pas encore donné son indice', now: 'est en train de donner son indice' }} />
               </PlayerChip>
             );

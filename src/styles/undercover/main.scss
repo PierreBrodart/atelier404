@@ -6,6 +6,22 @@
 
 // ——— Coquille de jeu et couleurs de phase ————————————————————————
 
+// Règle de construction : seules les SURFACES de premier niveau (cartes, carte de rôle, panneau du chat,
+// boutons posés sur l'aplat) ont le contour d'encre et l'ombre dure. Tout ce qui vit DANS une surface
+// (pastilles, étiquettes, champs, options, bulles…) se distingue par un aplat de couleur, jamais par un
+// second contour : des bordures imbriquées donnent un aspect cassé. Les séparateurs internes sont légers.
+.uc,
+.uc-start {
+  // Échelle d'espacement du jeu
+  --uc-stack: clamp(1.25rem, 2.6vw, 2rem); // entre les blocs d'un écran
+  --uc-gap: clamp(0.9rem, 1.8vw, 1.35rem); // entre cartes voisines d'une grille
+  --uc-inner: 1rem; // dans une carte
+  // Aplats et séparateurs à l'intérieur des surfaces
+  --uc-tint: rgb(22 19 59 / 0.07);
+  --uc-tint-strong: rgb(22 19 59 / 0.14);
+  --uc-rule: 2px solid rgb(22 19 59 / 0.12);
+}
+
 .uc {
   --uc-bg: var(--sun);
   --uc-fg: var(--ink);
@@ -83,15 +99,28 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem 1.5rem;
+    gap: 0.5rem 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 2.5px solid currentColor;
+
+    // Téléphone : tout tient sur une ligne (marque, code, quitter), « Voir mon mot » passe dessous
+    @include down(sm) {
+      column-gap: 0.9rem;
+
+      .uc-link-button {
+        font-size: 0.85rem;
+      }
+    }
   }
 
   &__brand {
     font-size: 1.15rem;
     font-weight: 800;
     letter-spacing: -0.03em;
+
+    @include down(sm) {
+      font-size: 1rem;
+    }
 
     // Cible tactile confortable (≥ 44 px)
     a {
@@ -135,7 +164,9 @@
 
 .uc-head {
   display: grid;
-  gap: 1rem;
+  gap: 0.85rem;
+  // Le titre d'un écran respire un peu plus que les blocs entre eux
+  margin-bottom: clamp(0.25rem, 1.2vw, 0.85rem);
 
   &__kicker {
     @include mono-label;
@@ -144,14 +175,14 @@
   &__title {
     @include display(clamp(2.4rem, 1rem + 6.4vw, 7.5rem));
     max-width: 14ch;
+    // line-height < 1 : les jambages (g, p, ç) débordaient sur le chapeau en dessous
+    padding-bottom: 0.08em;
 
-    &:focus {
-      outline: none;
-    }
-
+    // Reçoit le focus par programme à chaque changement d'écran (lecteurs d'écran) : ce n'est pas
+    // un élément interactif, un cadre autour du titre ressemblait à un bug d'affichage.
+    &:focus,
     &:focus-visible {
-      outline: 3px dashed currentColor;
-      outline-offset: 0.2em;
+      outline: none;
       box-shadow: none;
     }
   }
@@ -170,14 +201,14 @@
   --focus-halo: var(--paper);
 
   display: grid;
-  gap: 1.25rem;
+  gap: var(--uc-inner);
   align-content: start;
-  padding: clamp(1.1rem, 3vw, 2rem);
+  padding: clamp(1.1rem, 2.6vw, 1.75rem);
   background: var(--paper);
   color: var(--ink);
   border: var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
   --em-bg: var(--accent);
 
   &__title {
@@ -191,23 +222,84 @@
     gap: 0.5rem 1.5rem;
   }
 
+  // Sous-titre interne (ex. « Spectateurs ») : séparé par l'espace, pas par un trait
   &__sub {
     @include mono-label;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding-top: 0.85rem;
-    border-top: 2px dashed var(--ink);
+    margin-top: 0.5rem;
   }
 
   // Indice : brouillon préparé avant son tour, puis « à toi » quand le tour arrive
   &--draft {
     border-style: dashed;
-    box-shadow: 4px 4px 0 var(--ink);
+    box-shadow: none;
   }
 
   &--turn {
     background: var(--sun);
+  }
+
+  // Champs dans une carte : un aplat, pas un second contour
+  .field {
+    gap: 0.5rem;
+  }
+
+  .field input:not([type='checkbox']) {
+    background: var(--paper-deep);
+    border: 0;
+    box-shadow: none;
+
+    &:focus {
+      transform: none;
+      box-shadow: none;
+      outline: 3px solid var(--ink);
+      outline-offset: 2px;
+    }
+  }
+
+  &--turn .field input:not([type='checkbox']) {
+    background: var(--paper);
+  }
+
+  .field__hint {
+    color: var(--ink-soft);
+  }
+
+  // Boutons dans une carte : aplat d'encre sans contour ni ombre (le contour est celui de la carte)
+  .btn {
+    --btn-bg: var(--ink);
+    --btn-fg: var(--paper);
+    --btn-hover-bg: var(--tomato);
+    --btn-hover-fg: var(--ink);
+    justify-self: start;
+    min-height: 3.25rem;
+    border: 0;
+    box-shadow: none;
+
+    &:hover,
+    &:focus-visible,
+    &:active {
+      transform: none;
+      box-shadow: none;
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 3px;
+    }
+
+    &:disabled {
+      --btn-bg: var(--uc-tint-strong);
+      --btn-fg: var(--ink-soft);
+      opacity: 1;
+      cursor: not-allowed;
+
+      &::before {
+        display: none;
+      }
+    }
   }
 }
 
@@ -234,12 +326,14 @@
 
 .uc-count {
   display: inline-block;
-  padding: 0.1rem 0.6rem;
-  background: var(--sun);
-  border: 2px solid var(--ink);
+  padding: 0.15rem 0.6rem;
+  background: var(--ink);
+  color: var(--paper);
   border-radius: 999px;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
   vertical-align: middle;
 }
 
@@ -292,10 +386,6 @@
     --btn-hover-bg: var(--paper);
     --btn-hover-fg: var(--ink);
   }
-}
-
-.uc-card .btn {
-  min-height: 3.25rem;
 }
 
 .uc-waiting {
@@ -382,26 +472,25 @@
 .uc-players {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
-  gap: 0.75rem;
+  gap: 0.6rem;
   list-style: none;
   padding: 0;
 
   &--ordered {
     grid-template-columns: 1fr;
-    counter-reset: order;
   }
 }
 
+// Pastille d'une personne : [rang] avatar · nom / étiquettes / détail · élément de droite.
+// Un aplat (pas de contour : elle vit toujours dans une carte qui en a déjà un).
 .uc-chip {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 0.25rem 0.75rem;
-  padding: 0.6rem 0.8rem 0.6rem 0.6rem;
-  background: var(--paper-deep);
-  border: 2.5px solid var(--ink);
-  border-radius: 999px;
+  gap: 0.75rem;
   min-height: 3.5rem;
+  padding: 0.5rem 0.9rem 0.5rem 0.5rem;
+  background: var(--paper-deep);
+  border-radius: 999px;
 
   @include motion-safe {
     animation: uc-pop 0.55s var(--ease-spring) backwards;
@@ -410,32 +499,49 @@
 
   &--me {
     background: var(--sun);
-    box-shadow: 3px 3px 0 var(--ink);
+
+    // L'avatar jaune disparaîtrait sur la pastille jaune : l'avatar du joueur passe en encre
+    .uc-avatar {
+      background: var(--ink);
+      color: var(--sun);
+    }
   }
 
-  // Ni opacité forte ni couleur seule : les états « hors ligne » / « éliminé » restent lisibles (contraste AA)
-  &--offline {
-    border-style: dashed;
+  // États signalés par l'aplat ET par une étiquette texte (jamais la couleur seule)
+  &--offline .uc-avatar {
+    opacity: 0.45;
+  }
+
+  &--out,
+  &--watch {
+    background: var(--uc-tint);
   }
 
   &--out {
-    background: transparent;
-    border-style: dashed;
+    .uc-avatar {
+      background: var(--uc-tint-strong);
+      color: var(--ink-soft);
+    }
 
     .uc-chip__name {
+      color: var(--ink-soft);
       text-decoration: line-through;
       text-decoration-thickness: 2px;
     }
   }
 
-  // Spectateur : en pointillés comme un absent, mais sans barrer le nom (il n'a pas perdu)
-  &--watch {
-    border-style: dashed;
+  &__order {
+    @include mono-label;
+    flex: none;
+    min-width: 1.4rem;
+    color: var(--ink-soft);
+    text-align: right;
   }
 
   &__body {
     display: grid;
-    gap: 0.15rem;
+    flex: 1;
+    gap: 0.2rem;
     min-width: 0;
   }
 
@@ -443,7 +549,7 @@
     overflow: hidden;
     font-weight: 800;
     font-size: 1.05rem;
-    line-height: 1.1;
+    line-height: 1.15;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -451,23 +557,25 @@
   &__tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: 0.3rem;
   }
 
-  .uc-clue-text {
-    grid-column: 2 / -1;
+  &__detail {
     font-size: 0.95rem;
     font-style: italic;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  > :not(.uc-chip__body) {
+    flex: none;
   }
 }
 
+// Ordre de passage : une ligne par joueur, coins moins ronds (l'indice peut passer à la ligne)
 .uc-players--ordered .uc-chip {
+  padding-left: 0.75rem;
   border-radius: var(--radius);
-  counter-increment: order;
-
-  .uc-avatar::after {
-    content: counter(order);
-  }
 }
 
 .uc-avatar {
@@ -476,7 +584,6 @@
   width: 2.4rem;
   height: 2.4rem;
   background: var(--tomato);
-  border: 2.5px solid var(--ink);
   border-radius: 50%;
   font-weight: 800;
   line-height: 1;
@@ -497,10 +604,9 @@
 }
 
 .uc-tag {
-  padding: 0 0.45rem;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  border-radius: 0.4rem;
+  padding: 0.05rem 0.45rem;
+  background: var(--uc-tint-strong);
+  border-radius: 0.35rem;
   font-family: var(--font-mono);
   font-size: 0.65rem;
   font-weight: 700;
@@ -514,7 +620,9 @@
   }
 
   &--off {
-    border-style: dashed;
+    background: transparent;
+    padding-inline: 0;
+    color: var(--ink-soft);
   }
 
   &--score {
@@ -522,21 +630,25 @@
   }
 }
 
+// Statut d'un joueur (✓ / … / ▶) : pastille pleine, sans contour
 .uc-status {
   display: grid;
   place-items: center;
   width: 2rem;
   height: 2rem;
-  border: 2px solid var(--ink);
+  background: var(--uc-tint-strong);
+  color: var(--ink-soft);
   border-radius: 50%;
   font-weight: 800;
 
   &--done {
     background: var(--mint);
+    color: var(--ink);
   }
 
   &--now {
-    background: var(--sun);
+    background: var(--ink);
+    color: var(--sun);
 
     @include motion-safe {
       animation: uc-pulse 1.2s ease-in-out infinite;
@@ -545,10 +657,7 @@
 }
 
 // Rythme vertical commun à tous les écrans de phase (un composant par phase) : PhaseHead,
-// puis une ou plusieurs cartes, puis les actions. Réglé en une seule règle groupée plutôt
-// que dupliqué (et donc oublié) dans chaque écran — c'est cet oubli qui faisait toucher les
-// blocs entre eux (Clues, Voting, Elimination, RoleReveal, VoteResult, GameOver n'avaient
-// aucun espacement propre, seul le Lobby en avait un).
+// puis une ou plusieurs cartes, puis les actions. Une seule règle groupée pour tous les écrans.
 .uc-lobby,
 .uc-clues,
 .uc-voting,
@@ -557,7 +666,7 @@
 .uc-reveal,
 .uc-over {
   display: grid;
-  gap: clamp(1.85rem, 3.8vw, 3.2rem);
+  gap: var(--uc-stack);
 }
 
 // ——— Lobby ——————————————————————————————————————————————————
@@ -565,12 +674,12 @@
 .uc-lobby {
   &__grid {
     display: grid;
-    gap: 1.35rem;
+    gap: var(--uc-gap);
 
     // Version compacte des composants, propre au lobby : tout doit tenir dans l'écran
     .uc-card {
       gap: 0.85rem;
-      padding: clamp(0.9rem, 2vw, 1.25rem);
+      padding: clamp(0.95rem, 2vw, 1.35rem);
       box-shadow: 5px 5px 0 var(--ink);
     }
 
@@ -584,7 +693,6 @@
       span {
         width: clamp(2.6rem, 9vw, 3.5rem);
         font-size: clamp(1.5rem, 4vw, 2.25rem);
-        box-shadow: 3px 3px 0 var(--ink);
       }
     }
 
@@ -603,7 +711,7 @@
     }
 
     .uc-settings {
-      gap: 0.9rem;
+      gap: 1.1rem;
     }
 
     .uc-fieldset {
@@ -624,8 +732,8 @@
     }
 
     // 2,75 rem = 44 px : on garde une cible tactile confortable
-    .uc-seg__option span,
-    .uc-theme span {
+    .uc-seg__option > span,
+    .uc-theme > span {
       min-height: 2.75rem;
       padding: 0.25rem 0.85rem;
     }
@@ -635,6 +743,9 @@
       grid-template-areas:
         'code settings'
         'players settings';
+      // La 1re ligne prend la hauteur du code, la 2e absorbe le reste : sans ça, une carte de
+      // configuration plus haute que la colonne de gauche écartait le code des joueurs.
+      grid-template-rows: auto 1fr;
       align-items: start;
 
       .uc-card--code {
@@ -661,9 +772,7 @@
     width: clamp(3rem, 12vw, 5rem);
     aspect-ratio: 3 / 4;
     background: var(--sun);
-    border: var(--border);
     border-radius: 0.75rem;
-    box-shadow: 4px 4px 0 var(--ink);
     font-family: var(--font-mono);
     font-size: clamp(1.8rem, 6vw, 3rem);
     font-weight: 700;
@@ -724,21 +833,22 @@
   }
 }
 
-.uc-seg__option span,
-.uc-theme span {
+// `> span` et non `span` : le libellé contient lui-même un <span> (l'emoji du thème), qui recevait
+// sinon toute la forme de la pastille — une pastille dans la pastille.
+.uc-seg__option > span,
+.uc-theme > span {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   min-height: 2.9rem;
   padding: 0.4rem 1rem;
-  background: var(--paper);
-  border: 2.5px solid var(--ink);
+  background: var(--paper-deep);
   border-radius: 999px;
   font-weight: 800;
-  transition: background-color 0.2s, translate 0.3s var(--ease-spring), box-shadow 0.3s;
+  transition: background-color 0.2s, color 0.2s, translate 0.3s var(--ease-spring);
 }
 
-.uc-seg__option span {
+.uc-seg__option > span {
   min-width: 3.2rem;
   justify-content: center;
 }
@@ -747,8 +857,6 @@
 .uc-theme input:checked + span {
   background: var(--ink);
   color: var(--paper);
-  box-shadow: 3px 3px 0 var(--pink);
-  translate: -1px -1px;
 }
 
 .uc-seg__option input:focus-visible + span,
@@ -756,7 +864,6 @@
 .uc-vote__option input:focus-visible + .uc-vote__card {
   outline: 3px solid var(--ink);
   outline-offset: 3px;
-  box-shadow: 0 0 0 3px var(--paper), 0 0 0 6px var(--ink);
 }
 
 @include hover-capable {
@@ -767,11 +874,12 @@
   }
 }
 
-// Interrupteur (ex. rôle caché / visible) : une case à cocher accessible (`role="switch"`) dont on remplace la forme.
-// Posé directement sur l'aplat de couleur de la phase, il suit le style des boutons « ghost ».
+// Interrupteur : une case à cocher accessible (`role="switch"`) dont on remplace la forme.
+// Rail plein (pas de contour) suivi du libellé et de l'état : rien n'est encadré deux fois.
 .uc-toggle {
   position: relative;
   display: inline-block;
+  justify-self: start;
 
   input {
     position: absolute;
@@ -787,16 +895,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
-    min-height: 3.25rem;
-    padding: 0.4rem 1.1rem 0.4rem 0.6rem;
-    border: 2.5px solid currentColor;
+    min-height: 2.75rem;
     border-radius: 999px;
-    color: var(--uc-fg);
     font-weight: 800;
-
-    @include motion-safe {
-      transition: background-color 0.2s, color 0.2s;
-    }
   }
 
   &__track {
@@ -804,8 +905,7 @@
     flex: none;
     width: 3.25rem;
     height: 1.9rem;
-    background: var(--paper);
-    border: 2.5px solid var(--ink);
+    background: var(--uc-tint-strong);
     border-radius: 999px;
 
     @include motion-safe {
@@ -816,9 +916,9 @@
   &__thumb {
     position: absolute;
     top: 50%;
-    left: 0.2rem;
-    width: 1.1rem;
-    height: 1.1rem;
+    left: 0.3rem;
+    width: 1.3rem;
+    height: 1.3rem;
     background: var(--ink);
     border-radius: 50%;
     translate: 0 -50%;
@@ -830,7 +930,8 @@
 
   &__state {
     @include mono-label;
-    min-width: 7ch; // « Caché » et « Visible » : la pastille ne change pas de largeur
+    min-width: 7ch; // « Mot seul » / « Mot + camp » : la largeur ne saute pas
+    color: var(--ink-soft);
   }
 
   & input:checked + &__ui &__track {
@@ -839,13 +940,12 @@
 
   & input:checked + &__ui &__thumb {
     background: var(--sun);
-    translate: 1.44rem -50%;
+    translate: 1.35rem -50%;
   }
 
   & input:focus-visible + &__ui {
     outline: 3px solid var(--focus);
-    outline-offset: 3px;
-    box-shadow: 0 0 0 3px var(--focus-halo), 0 0 0 6px var(--focus);
+    outline-offset: 4px;
   }
 
   &[data-disabled='true'] {
@@ -861,22 +961,17 @@
 }
 
 @include hover-capable {
-  .uc-toggle:hover .uc-toggle__ui {
-    background: var(--paper);
-    color: var(--ink);
+  .uc-toggle:not([data-disabled='true']):hover input:not(:checked) + .uc-toggle__ui .uc-toggle__track {
+    background: var(--sun);
   }
 }
 
-// Compteur – / + (nombre d'Undercover) : même pastille que l'interrupteur, deux vrais boutons ronds.
+// Compteur – / + (nombre d'Undercover) : deux boutons pleins et la valeur, sans pastille autour.
 .uc-stepper {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
   justify-self: start;
-  min-height: 3.25rem;
-  padding: 0.2rem 1.1rem 0.2rem 0.25rem;
-  border: 2.5px solid currentColor;
-  border-radius: 999px;
   font-weight: 800;
 
   &__button {
@@ -884,20 +979,20 @@
     place-items: center;
     width: 2.75rem;
     height: 2.75rem;
-    background: var(--paper);
-    color: var(--ink);
-    border: 2.5px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
     border-radius: 50%;
     font-size: 1.4rem;
     font-weight: 800;
     line-height: 1;
 
     @include motion-safe {
-      transition: background-color 0.2s, translate 0.3s var(--ease-spring);
+      transition: background-color 0.2s, color 0.2s, translate 0.3s var(--ease-spring);
     }
 
     &:disabled {
-      opacity: 0.35;
+      background: var(--uc-tint-strong);
+      color: var(--ink-soft);
       cursor: not-allowed;
     }
 
@@ -913,11 +1008,16 @@
     font-size: 1.4rem;
     text-align: center;
   }
+
+  &__label {
+    margin-left: 0.15rem;
+  }
 }
 
 @include hover-capable {
   .uc-stepper__button:not(:disabled):hover {
     background: var(--sun);
+    color: var(--ink);
     translate: 0 -2px;
   }
 }
@@ -936,14 +1036,17 @@
 
 .uc-summary {
   display: grid;
-  gap: 0.75rem;
 
   > div {
     display: flex;
     justify-content: space-between;
+    align-items: baseline;
     gap: 1rem;
-    padding-block: 0.6rem;
-    border-top: 2px solid var(--ink);
+    padding-block: 0.65rem;
+
+    & + div {
+      border-top: var(--uc-rule);
+    }
   }
 
   dt {
@@ -956,9 +1059,8 @@
 }
 
 .uc-composition {
-  padding: 0.6rem 0.9rem;
+  padding: 0.65rem 0.95rem;
   background: var(--mint);
-  border: 2.5px solid var(--ink);
   border-radius: var(--radius);
   font-weight: 800;
 
@@ -1036,7 +1138,6 @@
     width: 6rem;
     height: 6rem;
     background: var(--sun);
-    border: var(--border);
     border-radius: 50%;
     font-size: 4rem;
     font-weight: 800;
@@ -1065,11 +1166,9 @@
 }
 
 .uc-word {
-  padding: 0.2rem 0.8rem 0.3rem;
+  padding: 0.3rem 0.9rem 0.4rem;
   background: var(--paper);
-  border: var(--border);
   border-radius: 0.6rem;
-  box-shadow: 4px 4px 0 var(--ink);
   font-family: var(--font-mono);
   font-size: clamp(1.4rem, 6vw, 2rem);
   font-weight: 700;
@@ -1081,7 +1180,6 @@
 
 .uc-recap {
   display: grid;
-  gap: 0.5rem;
   list-style: none;
   padding: 0;
 
@@ -1089,9 +1187,13 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
+    align-items: baseline;
     gap: 0.25rem 1rem;
     padding-block: 0.6rem;
-    border-top: 2px solid var(--ink);
+
+    & + li {
+      border-top: var(--uc-rule);
+    }
 
     span {
       font-style: italic;
@@ -1135,12 +1237,11 @@
   }
 
   &__turn {
-    margin-top: 1.1rem;
-    padding-top: 1.1rem;
-    border-top: 2px dashed var(--ink);
+    margin-top: 1rem;
 
-    &:first-of-type {
-      margin-top: 1rem;
+    & + & {
+      padding-top: 1rem;
+      border-top: var(--uc-rule);
     }
   }
 
@@ -1150,13 +1251,9 @@
     opacity: 0.75;
   }
 
-  .uc-recap {
-    gap: 0.3rem;
-
-    li {
-      padding-block: 0.3rem;
-      border-top: none;
-    }
+  .uc-recap li {
+    padding-block: 0.3rem;
+    border-top: none;
   }
 }
 
@@ -1171,10 +1268,8 @@
     min-height: 4.5rem;
     padding: 0.75rem;
     background: var(--paper-deep);
-    border: var(--border);
     border-radius: var(--radius);
-    box-shadow: 3px 3px 0 var(--ink);
-    transition: background-color 0.2s, translate 0.3s var(--ease-spring), box-shadow 0.3s, rotate 0.3s var(--ease-spring);
+    transition: background-color 0.2s, color 0.2s, translate 0.3s var(--ease-spring), rotate 0.3s var(--ease-spring);
   }
 
   &__name {
@@ -1185,10 +1280,20 @@
   }
 
   &__option input:checked + &__card {
-    background: var(--tomato);
-    box-shadow: 6px 6px 0 var(--ink);
-    translate: -2px -2px;
+    background: var(--ink);
+    color: var(--paper);
     rotate: -1.5deg;
+  }
+
+  // « Passer » : visuellement à part des joueurs
+  &__option--skip &__card {
+    background: transparent;
+    outline: 2px dashed var(--uc-tint-strong);
+    outline-offset: -2px;
+  }
+
+  &__option--skip input:checked + &__card {
+    outline: none;
   }
 }
 
@@ -1206,8 +1311,9 @@
   padding: 1rem 1.25rem;
   background: var(--paper);
   color: var(--ink);
-  border: 3px double var(--ink);
+  border: var(--border);
   border-radius: var(--radius);
+  box-shadow: 5px 5px 0 var(--ink);
   rotate: -1deg;
 
   &__title {
@@ -1226,7 +1332,7 @@
 
 .uc-result__grid {
   display: grid;
-  gap: 1.5rem;
+  gap: var(--uc-gap);
 
   @include up(lg) {
     grid-template-columns: 1fr 1fr;
@@ -1258,7 +1364,6 @@
     width: var(--w);
     min-width: 0.6rem;
     background: var(--tomato);
-    border: 2.5px solid var(--ink);
     border-radius: 999px;
     transform-origin: left;
 
@@ -1277,13 +1382,15 @@
 
 .uc-ballots {
   display: grid;
-  gap: 0.4rem;
   list-style: none;
   padding: 0;
 
   li {
-    padding-block: 0.4rem;
-    border-top: 2px solid var(--ink);
+    padding-block: 0.45rem;
+
+    & + li {
+      border-top: var(--uc-rule);
+    }
 
     @include motion-safe {
       animation: uc-slide 0.5s var(--ease-out) backwards;
@@ -1300,7 +1407,7 @@
 
 .uc-words {
   display: grid;
-  gap: 1rem;
+  gap: var(--uc-gap);
 
   @include up(md) {
     grid-template-columns: 1fr 1fr;
@@ -1308,8 +1415,8 @@
 
   &__item {
     display: grid;
-    gap: 0.25rem;
-    padding: 1.1rem 1.4rem;
+    gap: 0.6rem;
+    padding: 1.1rem 1.4rem 1.25rem;
     background: var(--paper);
     color: var(--ink);
     border: var(--border);
@@ -1318,6 +1425,10 @@
 
     p {
       @include mono-label;
+      justify-self: start;
+      padding: 0.2rem 0.55rem;
+      background: var(--role-color);
+      border-radius: 0.35rem;
     }
 
     strong {
@@ -1326,21 +1437,20 @@
     }
 
     &--civil {
+      --role-color: var(--mint);
       rotate: -1deg;
-      background: var(--mint);
     }
 
     &--under {
+      --role-color: var(--tomato);
       rotate: 1deg;
-      background: var(--tomato);
     }
   }
 }
 
 .uc-role-tag {
-  padding: 0.15rem 0.7rem;
+  padding: 0.2rem 0.7rem;
   background: var(--paper);
-  border: 2px solid var(--ink);
   border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 800;
@@ -1354,7 +1464,6 @@
   }
   &--MR_WHITE {
     background: var(--paper);
-    border-style: dashed;
   }
 }
 
@@ -1371,8 +1480,11 @@
   th,
   td {
     padding: 0.6rem 0.5rem;
-    border-top: 2px solid var(--ink);
     text-align: left;
+  }
+
+  tbody tr {
+    border-top: var(--uc-rule);
   }
 
   thead th {
@@ -1591,11 +1703,10 @@
     padding: 0 0.4rem;
     background: var(--tomato);
     color: var(--ink);
-    border: 2px solid var(--ink);
     border-radius: 999px;
     font-family: var(--font-mono);
     font-size: 0.8rem;
-    line-height: 1.4;
+    line-height: 1.5;
     text-align: center;
 
     @include motion-safe {
@@ -1634,7 +1745,6 @@
     justify-content: space-between;
     padding: 0.35rem 0.4rem 0.35rem 1rem;
     background: var(--sun);
-    border-bottom: var(--border);
   }
 
   &__title {
@@ -1691,9 +1801,8 @@
     display: grid;
     gap: 0.15rem;
     min-width: 0;
-    padding: 0.4rem 0.7rem 0.5rem;
+    padding: 0.45rem 0.75rem 0.55rem;
     background: var(--paper-deep);
-    border: 2px solid var(--ink);
     border-radius: 0.3rem 1rem 1rem 1rem;
     overflow-wrap: anywhere;
 
@@ -1701,10 +1810,9 @@
       background: var(--sun);
     }
 
-    // Hors jeu (éliminé ou spectateur pendant la manche) : pointillés, comme les joueurs sortis
+    // Hors jeu (éliminé ou spectateur pendant la manche) : aplat discret, comme les joueurs sortis
     .uc-chat__msg--ghost & {
-      background: transparent;
-      border-style: dashed;
+      background: var(--uc-tint);
     }
   }
 
@@ -1726,7 +1834,7 @@
     display: grid;
     gap: 0.5rem;
     padding: 0.75rem;
-    border-top: var(--border);
+    border-top: var(--uc-rule);
   }
 
   &__note {
@@ -1743,9 +1851,9 @@
       min-width: 0;
       min-height: 2.75rem;
       padding: 0.4rem 0.9rem;
-      background: var(--paper);
+      background: var(--paper-deep);
       color: var(--ink);
-      border: var(--border);
+      border: 0;
       border-radius: 999px;
       font: inherit;
 
@@ -1765,12 +1873,12 @@
     padding: 0 1rem;
     background: var(--ink);
     color: var(--paper);
-    border: var(--border);
     border-radius: 999px;
     font-weight: 800;
 
     &:disabled {
-      opacity: 0.4;
+      background: var(--uc-tint-strong);
+      color: var(--ink-soft);
       cursor: not-allowed;
     }
   }

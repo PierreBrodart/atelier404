@@ -40,41 +40,78 @@ export function PhaseHead({ kicker, title, children }: { kicker: string; title: 
 const AVATAR_TONES = 5;
 export const toneOf = (id: string) => [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % AVATAR_TONES;
 
+interface ChipProps {
+  id: string;
+  name: string;
+  /** Étiquettes sous le nom (Host, Toi, Absent…) ; rien n'est rendu s'il n'y en a aucune */
+  tags: ReactNode[];
+  className?: string;
+  index: number;
+  /** Rang dans l'ordre de passage, affiché devant l'avatar */
+  order?: number;
+  /** Ligne de détail sous le nom (ex. l'indice donné) */
+  detail?: ReactNode;
+  /** Élément aligné à droite (statut, rôle…) */
+  children?: ReactNode;
+}
+
+/** Pastille d'une personne : [rang] avatar · nom, étiquettes, détail · élément de droite. */
+function Chip({ id, name, tags, className, index, order, detail, children }: ChipProps) {
+  const visibleTags = tags.filter(Boolean);
+  return (
+    <li className={cx('uc-chip', className)} style={{ '--i': index } as CSSProperties}>
+      {order !== undefined && (
+        <span className="uc-chip__order" aria-hidden="true">
+          {order}
+        </span>
+      )}
+      <span className={`uc-avatar uc-avatar--${toneOf(id)}`} aria-hidden="true">
+        {name.slice(0, 1).toUpperCase()}
+      </span>
+      <span className="uc-chip__body">
+        <span className="uc-chip__name">{name}</span>
+        {visibleTags.length > 0 && <span className="uc-chip__tags">{visibleTags}</span>}
+        {detail && <span className="uc-chip__detail">{detail}</span>}
+      </span>
+      {children}
+    </li>
+  );
+}
+
 interface PlayerChipProps {
   player: PublicPlayer;
   meId: string;
   index?: number;
   score?: boolean;
+  order?: number;
+  detail?: ReactNode;
   children?: ReactNode;
 }
 
-export function PlayerChip({ player, meId, index = 0, score, children }: PlayerChipProps) {
+export function PlayerChip({ player, meId, index = 0, score, order, detail, children }: PlayerChipProps) {
   const offline = !player.connected && !player.left;
   return (
-    <li
+    <Chip
+      id={player.id}
+      name={player.name}
+      index={index}
+      order={order}
+      detail={detail}
       className={cx(
-        'uc-chip',
         player.id === meId && 'uc-chip--me',
         offline && 'uc-chip--offline',
         (!player.alive || player.left) && 'uc-chip--out',
       )}
-      style={{ '--i': index } as CSSProperties}
+      tags={[
+        player.isHost && <span key="host" className="uc-tag uc-tag--host">Host</span>,
+        player.id === meId && <span key="me" className="uc-tag">Toi</span>,
+        player.left && <span key="left" className="uc-tag uc-tag--off">Parti</span>,
+        offline && <span key="off" className="uc-tag uc-tag--off">{player.away ? 'Absent' : 'Reconnexion…'}</span>,
+        score && <span key="score" className="uc-tag uc-tag--score">{player.score} pt</span>,
+      ]}
     >
-      <span className={`uc-avatar uc-avatar--${toneOf(player.id)}`} aria-hidden="true">
-        {player.name.slice(0, 1).toUpperCase()}
-      </span>
-      <span className="uc-chip__body">
-        <span className="uc-chip__name">{player.name}</span>
-        <span className="uc-chip__tags">
-          {player.isHost && <span className="uc-tag uc-tag--host">Host</span>}
-          {player.id === meId && <span className="uc-tag">Toi</span>}
-          {player.left && <span className="uc-tag uc-tag--off">Parti</span>}
-          {offline && <span className="uc-tag uc-tag--off">{player.away ? 'Absent' : 'Reconnexion…'}</span>}
-          {score && <span className="uc-tag uc-tag--score">{player.score} pt</span>}
-        </span>
-      </span>
       {children}
-    </li>
+    </Chip>
   );
 }
 
@@ -83,26 +120,21 @@ export function SpectatorList({ spectators, meId }: { spectators: PublicSpectato
   return (
     <ul className="uc-players uc-players--spectators">
       {spectators.map((spectator, index) => (
-        <li
+        <Chip
           key={spectator.id}
-          className={cx('uc-chip', 'uc-chip--watch', spectator.id === meId && 'uc-chip--me', !spectator.connected && 'uc-chip--offline')}
-          style={{ '--i': index } as CSSProperties}
-        >
-          <span className={`uc-avatar uc-avatar--${toneOf(spectator.id)}`} aria-hidden="true">
-            {spectator.name.slice(0, 1).toUpperCase()}
-          </span>
-          <span className="uc-chip__body">
-            <span className="uc-chip__name">{spectator.name}</span>
-            <span className="uc-chip__tags">
-              {spectator.isHost && <span className="uc-tag uc-tag--host">Host</span>}
-              {spectator.id === meId && <span className="uc-tag">Toi</span>}
-              <span className="uc-tag uc-tag--off">
-                {spectator.queuePosition ? `File n°${spectator.queuePosition}` : 'Spectateur'}
-              </span>
-              {!spectator.connected && <span className="uc-tag uc-tag--off">Reconnexion…</span>}
-            </span>
-          </span>
-        </li>
+          id={spectator.id}
+          name={spectator.name}
+          index={index}
+          className={cx('uc-chip--watch', spectator.id === meId && 'uc-chip--me', !spectator.connected && 'uc-chip--offline')}
+          tags={[
+            spectator.isHost && <span key="host" className="uc-tag uc-tag--host">Host</span>,
+            spectator.id === meId && <span key="me" className="uc-tag">Toi</span>,
+            <span key="seat" className="uc-tag uc-tag--off">
+              {spectator.queuePosition ? `File n°${spectator.queuePosition}` : 'Spectateur'}
+            </span>,
+            !spectator.connected && <span key="off" className="uc-tag uc-tag--off">Reconnexion…</span>,
+          ]}
+        />
       ))}
     </ul>
   );
