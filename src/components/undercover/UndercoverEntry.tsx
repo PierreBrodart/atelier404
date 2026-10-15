@@ -6,6 +6,7 @@ import { LAST_ROOM_KEY, NAME_KEY, api, loadSession, saveSession, storage, useBro
 import type { JoinResponse } from '@/lib/undercover/types';
 import { Button } from '../ui/Button';
 import { TLink } from '../layout/PageTransition';
+import { PublicRooms } from './PublicRooms';
 
 /** Point d'entrée du jeu : prénom, créer une room, ou rejoindre avec un code. */
 export function UndercoverEntry() {
@@ -14,7 +15,8 @@ export function UndercoverEntry() {
   const [typedName, setName] = useState<string | null>(null);
   const name = typedName ?? savedName;
   const [code, setCode] = useState('');
-  const [busy, setBusy] = useState<'create' | 'join' | null>(null);
+  // 'create', 'join', ou le code d'une partie de la liste en cours d'entrée
+  const [busy, setBusy] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ name?: string; code?: string; form?: string }>({});
   const resumeCode = useBrowserValue(() => {
     const last = storage.get(LAST_ROOM_KEY);
@@ -47,16 +49,14 @@ export function UndercoverEntry() {
     router.push(`/undercover/${result.code}`);
   };
 
-  const join = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!checkName()) return;
-    const clean = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (clean.length !== 5) {
-      setErrors({ code: 'Le code contient 5 caractères (lettres et chiffres).' });
-      document.getElementById('uc-code')?.focus();
+  /** Entre dans une room avec le prénom saisi (directement si ce navigateur y a déjà sa place). */
+  const enter = async (clean: string, marker: string) => {
+    if (loadSession(clean)) {
+      router.push(`/undercover/${clean}`);
       return;
     }
-    setBusy('join');
+    if (!checkName()) return;
+    setBusy(marker);
     setErrors({});
     const result = await api<JoinResponse>({ type: 'join', code: clean, name });
     if (!result.ok) {
@@ -66,6 +66,17 @@ export function UndercoverEntry() {
     }
     saveSession(result);
     router.push(`/undercover/${result.code}`);
+  };
+
+  const join = async (event: FormEvent) => {
+    event.preventDefault();
+    const clean = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (clean.length !== 5) {
+      setErrors({ code: 'Le code contient 5 caractères (lettres et chiffres).' });
+      document.getElementById('uc-code')?.focus();
+      return;
+    }
+    await enter(clean, 'join');
   };
 
   return (
@@ -143,6 +154,8 @@ export function UndercoverEntry() {
           </Button>
         </form>
       </div>
+
+      <PublicRooms onEnter={(roomCode) => enter(roomCode, roomCode)} busyCode={busy} />
     </div>
   );
 }

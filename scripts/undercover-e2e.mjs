@@ -223,9 +223,6 @@ async function main() {
   await waitFor(() => alice.view.chat.some((m) => m.text === 'Salut la table' && m.name === 'Bruno' && !m.ghost), 'message de chat reçu par les autres');
   const empty = await bruno.act({ type: 'chat', text: '   ' });
   check(!empty.ok, 'message vide refusé');
-  const burst = [];
-  for (let i = 0; i < 6; i += 1) burst.push(await chloe.act({ type: 'chat', text: `spam ${i}` }));
-  check(burst.slice(0, 5).every((r) => r.ok) && !burst[5].ok, 'limitation de débit du chat (5 messages / 5 s)');
 
   // ————— Manche 1 —————
   section('Manche 1 : distribution, confidentialité, égalité, Mr White éliminé (mauvaise réponse), victoire des civils');
@@ -338,8 +335,7 @@ async function main() {
   // Chat pendant la manche : un éliminé (ou un spectateur) ne parle qu'aux éliminés et aux spectateurs
   const offside = await white.act({ type: 'chat', text: 'chuchotement hors jeu' });
   check(offside.ok, 'un éliminé peut écrire dans le chat');
-  // (pas Chloé : elle vient d'épuiser son débit de chat dans le lobby)
-  const tableTalk = await civilians.find((c) => c !== chloe).act({ type: 'chat', text: 'message de la table' });
+  const tableTalk = await civilians[0].act({ type: 'chat', text: 'message de la table' });
   check(tableTalk.ok, 'un joueur en vie peut écrire dans le chat');
   await waitFor(() => late.view.chat.some((m) => m.text === 'message de la table'), 'le spectateur lit la table');
   await waitFor(() => white.view.chat.some((m) => m.text === 'message de la table'), 'l’éliminé lit la table');
@@ -454,6 +450,7 @@ async function main() {
   await persistentTieScenario();
   await queueScenario();
   await mrWhiteNeverFirstScenario();
+  await roomAdminScenario();
   await scoringScenario();
 
   if (SLOW) await slowTests();
@@ -616,6 +613,50 @@ async function mrWhiteNeverFirstScenario() {
     for (const c of five) c.disconnect();
   }
   check(firsts === 0, `Mr White n’ouvre jamais le tour (12 tirages, ${firsts} fois en premier)`);
+}
+
+/** Partie publique / privée (liste de l'accueil), changement de prénom, passage du lead. */
+async function roomAdminScenario() {
+  section('Partie publique, liste des parties, renommage, passage du lead');
+  const trio = await seatTable(['Lena', 'Milo', 'Nina']);
+  const [host, milo, nina] = trio;
+  const listed = async () => (await api({ type: 'list' })).rooms.some((r) => r.code === host.code);
+
+  check(host.room.isPublic === false && !(await listed()), 'une partie est privée par défaut, absente de la liste');
+  const notHost = await milo.act({ type: 'visibility', public: true });
+  check(!notHost.ok, 'seul le host rend la partie publique');
+  await host.act({ type: 'visibility', public: true });
+  await waitFor(() => milo.room.isPublic, 'partie publique visible de tous');
+  const entry = (await api({ type: 'list' })).rooms.find((r) => r.code === host.code);
+  check(entry?.hostName === 'Lena' && entry.players === 3 && entry.phase === 'LOBBY', 'la partie publique apparaît dans la liste');
+  check(!JSON.stringify(entry).includes('token') && !('settings' in entry), 'la liste ne contient rien de secret');
+
+  const renamed = await milo.act({ type: 'rename', name: '  Milo le Grand  ' });
+  check(renamed.ok, 'un joueur change de prénom');
+  await waitFor(() => host.room.players.some((p) => p.id === milo.playerId && p.name === 'Milo le Grand'), 'nouveau prénom diffusé');
+  const taken = await nina.act({ type: 'rename', name: 'lena' });
+  check(!taken.ok, 'un prénom déjà pris est refusé (casse ignorée)');
+  const tooShort = await nina.act({ type: 'rename', name: 'N' });
+  check(!tooShort.ok, 'un prénom trop court est refusé');
+
+  // Limitation de débit du chat (testée ici, sur une room qui ne joue pas : sinon le quota épuisé
+  // pourrait empêcher ce joueur de parler plus loin dans un autre scénario)
+  const burst = [];
+  for (let i = 0; i < 6; i += 1) burst.push(await milo.act({ type: 'chat', text: `spam ${i}` }));
+  check(burst.slice(0, 5).every((r) => r.ok) && !burst[5].ok, 'limitation de débit du chat (5 messages / 5 s)');
+
+  const notLead = await milo.act({ type: 'giveLead', targetId: nina.playerId });
+  check(!notLead.ok, 'seul le host passe le lead');
+  const given = await host.act({ type: 'giveLead', targetId: nina.playerId });
+  check(given.ok, 'le host passe le lead');
+  await waitFor(() => nina.me.isHost && !host.me.isHost, 'le lead a changé de main');
+  check((await api({ type: 'list' })).rooms.find((r) => r.code === host.code)?.hostName === 'Nina', 'la liste affiche le nouveau host');
+  const stale = await host.act({ type: 'visibility', public: false });
+  check(!stale.ok, 'l’ancien host n’a plus la main');
+  await nina.act({ type: 'visibility', public: false });
+  await waitFor(() => !host.room.isPublic, 'repassée en privée');
+  check(!(await listed()), 'une partie privée disparaît de la liste');
+  for (const c of trio) c.disconnect();
 }
 
 /** Crée une room avec ces joueurs (le premier est host), tous connectés. */

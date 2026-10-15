@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { parseAction, parseCode, parseName } from '@/lib/undercover/parse';
-import { createRoomForHost, joinRoom, peekRoom, runAction } from '@/lib/undercover/store';
+import { createRoomForHost, joinRoom, listPublicRooms, peekRoom, runAction } from '@/lib/undercover/store';
 
 // Toujours dynamique et exécuté par Node : l'état des rooms vit en mémoire dans le processus.
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,7 @@ const bad = (error: string, status = 400) => NextResponse.json({ ok: false, erro
  *  { type: 'create', name }                     → crée une room, retourne { code, playerId, token }
  *  { type: 'join', code, name }                 → rejoint une room
  *  { type: 'peek', code }                       → infos publiques d'une room (avant de rejoindre)
+ *  { type: 'list' }                             → parties publiques en cours (accueil du jeu)
  *  { type: 'action', code, token, action }      → action d'un joueur authentifié
  */
 export async function POST(request: Request) {
@@ -52,6 +53,9 @@ export async function POST(request: Request) {
       if (!code) return bad('Le code de la room contient 5 caractères.');
       return NextResponse.json({ ok: true, ...peekRoom(code) });
     }
+
+    case 'list':
+      return NextResponse.json({ ok: true, rooms: listPublicRooms() });
 
     case 'action': {
       const code = parseCode(input.code);

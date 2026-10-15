@@ -79,6 +79,7 @@ function publicRoom(room: Room): PublicRoom {
     turn: room.turn,
     revision: room.revision,
     hostId: room.hostId,
+    isPublic: room.isPublic,
     settings: { ...room.settings },
     themeLabel: game ? game.themeLabel : null,
     players: publicPlayers,

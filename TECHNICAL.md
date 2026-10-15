@@ -195,6 +195,14 @@ partie reste en CLUES (discussion libre) jusqu'à ce que le host envoie l'action
   un spectateur choisit de jouer ou de regarder à tout moment ; un joueur ne peut passer spectateur qu'en lobby
   (contrôle « Je joue / Je regarde » dans la carte Joueurs, ou dans le bandeau spectateur pendant une manche). Un
   spectateur déconnecté plus de 30 s est retiré (il n'a aucune donnée de manche).
+- **Parties publiques** : une room est **privée par défaut** ; le host la rend publique depuis le lobby (action
+  `visibility`, `Room.isPublic`). L'accueil `/undercover` liste les parties publiques où quelqu'un est connecté
+  (`{ type: 'list' }` → `listPublicRooms()` dans `store.ts`, rafraîchie toutes les 5 s, 30 au plus, lobbys d'abord) :
+  code, prénom du host, phase, nombre de joueurs et de spectateurs — rien de secret. « Rejoindre » / « Regarder »
+  entre avec le prénom saisi sur l'accueil (`components/undercover/PublicRooms.tsx`).
+- **Menu personnel** (barre du haut, « Prénom ▾ », `RoomMenu.tsx`) : changer de prénom à tout moment (action
+  `rename`, unicité vérifiée ; les anciens messages du chat gardent l'ancien prénom), passer le lead à quelqu'un de
+  la room, joueur ou spectateur (action `giveLead`, host uniquement), quitter la partie.
 - **Chat** : action `chat` (200 caractères, 5 messages / 5 s par personne, 80 derniers messages gardés par room).
   Pendant une manche, un éliminé ou un spectateur écrit « hors jeu » (`ChatMessage.ghost`) : seuls les éliminés et les
   spectateurs le lisent, car un éliminé connaît son mot ; tout redevient visible en fin de manche.

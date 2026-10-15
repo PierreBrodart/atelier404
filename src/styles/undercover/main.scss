@@ -1687,6 +1687,94 @@
   }
 }
 
+// Parties publiques en cours (accueil du jeu) : une carte par partie, bouton à droite
+.uc-rooms {
+  display: grid;
+  gap: 1rem;
+  margin-top: clamp(1.5rem, 4vw, 2.75rem);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  &__title {
+    @include display(clamp(1.6rem, 1rem + 2vw, 2.6rem));
+  }
+
+  &__list {
+    display: grid;
+    gap: 0.75rem;
+  }
+}
+
+.uc-room.uc-card {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 0.9rem 0.9rem 0.9rem 1.25rem;
+  box-shadow: 4px 4px 0 var(--ink);
+
+  @include down(md) {
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    .btn {
+      grid-column: 1 / -1;
+      justify-self: stretch;
+      justify-content: center;
+    }
+  }
+}
+
+.uc-room {
+  &__main {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  &__name {
+    overflow: hidden;
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.75rem;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  &__code {
+    padding: 0.1rem 0.45rem;
+    background: var(--sun);
+    color: var(--ink);
+    border-radius: 0.35rem;
+    letter-spacing: 0.12em;
+  }
+
+  &__phase {
+    padding: 0.25rem 0.75rem;
+    background: var(--tomato);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    white-space: nowrap;
+
+    &[data-lobby='true'] {
+      background: var(--mint);
+    }
+  }
+}
+
 .uc-code-input {
   font-family: var(--font-mono);
   font-size: 1.6rem !important;
@@ -1782,6 +1870,167 @@
     font-family: var(--font-mono);
     font-size: 0.85rem;
     opacity: 0.85;
+  }
+}
+
+// ——— Menu personnel (barre du haut) : prénom, lead, quitter ———————————————
+
+.uc-menu {
+  position: relative;
+
+  &__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.75rem;
+    max-width: min(16rem, 52vw);
+    padding: 0.3rem 0.85rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: 999px;
+    box-shadow: 3px 3px 0 var(--ink);
+    font-weight: 800;
+
+    &[aria-expanded='true'] {
+      background: var(--ink);
+      color: var(--paper);
+
+      .uc-tag--host {
+        background: var(--sun);
+        color: var(--ink);
+      }
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+  }
+
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__panel {
+    --focus: var(--ink);
+    --focus-halo: var(--paper);
+
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    right: 0;
+    z-index: 75;
+    display: grid;
+    width: min(21rem, calc(100vw - 2rem));
+    padding: 0.4rem 1.1rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 6px 6px 0 var(--ink);
+    transform-origin: top right;
+
+    @include motion-safe {
+      animation: uc-pop 0.3s var(--ease-spring);
+    }
+  }
+
+  &__section {
+    display: grid;
+    gap: 0.5rem;
+    padding-block: 0.85rem;
+
+    & + & {
+      border-top: var(--uc-rule);
+    }
+
+    // Le lien souligné garde la largeur de son texte (sinon le trait traverse tout le panneau)
+    &--leave {
+      justify-items: start;
+    }
+  }
+
+  &__label {
+    @include mono-label;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+
+    input,
+    select {
+      flex: 1;
+      min-width: 0;
+      min-height: 2.75rem;
+      padding: 0.4rem 0.9rem;
+      background: var(--paper-deep);
+      color: var(--ink);
+      border: 0;
+      border-radius: var(--radius);
+      font: inherit;
+
+      &:focus-visible {
+        outline: 3px solid var(--ink);
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  &__action {
+    min-height: 2.75rem;
+    padding: 0 1.05rem;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 999px;
+    font-weight: 800;
+
+    &:disabled {
+      background: var(--uc-tint-strong);
+      color: var(--ink-soft);
+      cursor: not-allowed;
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 2px;
+    }
+
+    &--danger {
+      background: var(--tomato);
+      color: var(--ink);
+    }
+  }
+
+  &__ok,
+  &__error {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  &__ok {
+    background: var(--mint);
+  }
+
+  &__error {
+    background: var(--sun);
+  }
+}
+
+@include hover-capable {
+  .uc-menu__action:not(:disabled):hover {
+    background: var(--tomato);
+    color: var(--ink);
+  }
+
+  .uc-menu__toggle[aria-expanded='false']:hover {
+    translate: 0 -2px;
   }
 }
 

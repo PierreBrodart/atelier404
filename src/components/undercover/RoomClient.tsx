@@ -14,6 +14,7 @@ import { GameOver, WINNER_TITLES } from './GameOver';
 import { JoinGate } from './JoinGate';
 import { Lobby } from './Lobby';
 import { RoleReveal } from './RoleReveal';
+import { RoomMenu } from './RoomMenu';
 import { SeatSwitch } from './parts';
 import { VoteResult } from './VoteResult';
 import { Voting } from './Voting';
@@ -154,7 +155,6 @@ export function RoomClient({ code, themes }: { code: string; themes: ThemeInfo[]
   const router = useRouter();
   const { connection, view, peek, join, send, leave } = useRoom(code);
   const [toast, setToast] = useState<string | null>(null);
-  const [confirmLeave, setConfirmLeave] = useState(false);
   const lastScreen = useRef<string | null>(null);
 
   const act = useCallback(
@@ -236,27 +236,14 @@ export function RoomClient({ code, themes }: { code: string; themes: ThemeInfo[]
             <MyWord view={view} />
           </div>
           <div className="uc__leave">
-            {confirmLeave ? (
-              <>
-                <button
-                  type="button"
-                  className="uc-link-button"
-                  onClick={async () => {
-                    await leave();
-                    router.push('/undercover');
-                  }}
-                >
-                  Oui, quitter
-                </button>
-                <button type="button" className="uc-link-button" onClick={() => setConfirmLeave(false)}>
-                  Rester
-                </button>
-              </>
-            ) : (
-              <button type="button" className="uc-link-button" onClick={() => setConfirmLeave(true)}>
-                Quitter la partie
-              </button>
-            )}
+            <RoomMenu
+              view={view}
+              send={send}
+              onLeave={async () => {
+                await leave();
+                router.push('/undercover');
+              }}
+            />
           </div>
         </header>
 

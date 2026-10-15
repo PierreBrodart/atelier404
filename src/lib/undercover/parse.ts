@@ -54,6 +54,17 @@ export function parseAction(input: unknown): ClientAction | null {
     case 'seat':
       return typeof input.play === 'boolean' ? { type: 'seat', play: input.play } : null;
 
+    case 'visibility':
+      return typeof input.public === 'boolean' ? { type: 'visibility', public: input.public } : null;
+
+    case 'rename': {
+      const name = parseName(input.name);
+      return name ? { type: 'rename', name } : null;
+    }
+
+    case 'giveLead':
+      return typeof input.targetId === 'string' ? { type: 'giveLead', targetId: input.targetId.slice(0, 40) } : null;
+
     case 'chat': {
       const message = text(input.text, LIMITS.chatMax);
       return message ? { type: 'chat', text: message } : null;

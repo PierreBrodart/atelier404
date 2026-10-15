@@ -83,6 +83,7 @@ export function createRoom(code: string, host: ServerPlayer): Room {
     revision: 0,
     scores: { [host.id]: 0 },
     game: null,
+    isPublic: false,
     usedPairs: [],
     chat: [],
     chatSeq: 0,
@@ -230,6 +231,36 @@ function changeSeat(room: Room, player: ServerPlayer, play: boolean): ActionResu
     fillSeats(room);
   }
   if (room.phase === 'LOBBY') normalizeSettings(room);
+  touch(room);
+  return OK;
+}
+
+// ——— Administration de la room ————————————————————————————————————
+
+function setVisibility(room: Room, player: ServerPlayer, isPublic: boolean): ActionResult {
+  if (room.hostId !== player.id) return fail('Seul le host peut rendre la partie publique ou privée.');
+  room.isPublic = isPublic;
+  touch(room);
+  return OK;
+}
+
+/** Changer de prénom, à tout moment. Les anciens messages du chat gardent le prénom d'alors. */
+function rename(room: Room, player: ServerPlayer, name: string): ActionResult {
+  const taken = activePlayers(room).some(
+    (other) => other.id !== player.id && other.name.toLowerCase() === name.toLowerCase(),
+  );
+  if (taken) return fail('Ce prénom est déjà pris dans la room.');
+  player.name = name;
+  touch(room);
+  return OK;
+}
+
+/** Le host passe la main à quelqu'un d'autre de la room (joueur ou spectateur). */
+function giveLead(room: Room, player: ServerPlayer, targetId: string): ActionResult {
+  if (room.hostId !== player.id) return fail('Seul le host peut passer le lead.');
+  const target = findPlayer(room, targetId);
+  if (!target || target.left || target.id === player.id) return fail('Cette personne ne peut pas recevoir le lead.');
+  room.hostId = target.id;
   touch(room);
   return OK;
 }
@@ -629,6 +660,15 @@ export function applyAction(room: Room, playerId: string, action: ClientAction):
 
     case 'seat':
       return changeSeat(room, player, action.play);
+
+    case 'visibility':
+      return setVisibility(room, player, action.public);
+
+    case 'rename':
+      return rename(room, player, action.name);
+
+    case 'giveLead':
+      return giveLead(room, player, action.targetId);
 
     case 'chat':
       return postChat(room, player, action.text);

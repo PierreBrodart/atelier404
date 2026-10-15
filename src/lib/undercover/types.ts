@@ -100,6 +100,9 @@ export type ClientAction =
   | { type: 'newRound' }
   | { type: 'seat'; play: boolean }
   | { type: 'chat'; text: string }
+  | { type: 'visibility'; public: boolean }
+  | { type: 'rename'; name: string }
+  | { type: 'giveLead'; targetId: string }
   | { type: 'leave' };
 
 /**
@@ -213,6 +216,8 @@ export interface Room {
   revision: number;
   scores: Record<string, number>;
   game: GameData | null;
+  /** Partie publique : visible dans la liste des parties en cours de l'accueil du jeu */
+  isPublic: boolean;
   /** Paires déjà jouées dans cette room (évite les répétitions) */
   usedPairs: string[];
   /** Derniers messages du chat (les plus anciens sont supprimés au-delà de `LIMITS.chatHistory`) */
@@ -266,6 +271,7 @@ export interface PublicRoom {
   turn: number;
   revision: number;
   hostId: string;
+  isPublic: boolean;
   settings: GameSettings;
   themeLabel: string | null;
   /** Joueurs assis à la table (les participants de la manche une fois lancée) */
@@ -335,6 +341,16 @@ export interface JoinResponse {
   code: string;
   playerId: string;
   token: string;
+}
+
+/** Une partie publique telle que listée sur l'accueil du jeu (aucune info de jeu secrète). */
+export interface PublicRoomSummary {
+  code: string;
+  hostName: string;
+  phase: GamePhase;
+  round: number;
+  players: number;
+  spectators: number;
 }
 
 export interface PeekResponse {

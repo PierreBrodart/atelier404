@@ -15,7 +15,16 @@ import {
 } from './engine';
 import { TIMING } from './rules';
 import { toRoomView } from './view';
-import type { ActionResult, ClientAction, JoinResponse, PeekResponse, Room, RoomView, ServerPlayer } from './types';
+import type {
+  ActionResult,
+  ClientAction,
+  JoinResponse,
+  PeekResponse,
+  PublicRoomSummary,
+  Room,
+  RoomView,
+  ServerPlayer,
+} from './types';
 
 /**
  * Store des rooms + synchronisation temps réel (SSE).
@@ -118,6 +127,28 @@ export function joinRoom(code: string, name: string): JoinResponse | { error: st
   if (!result.ok) return { error: result.error, status: 409 };
   broadcast(room);
   return asJoin(room, player);
+}
+
+const MAX_LISTED_ROOMS = 30;
+
+/**
+ * Parties publiques en cours, pour l'accueil du jeu : seulement celles qu'un host a rendues publiques
+ * et où quelqu'un est connecté. Lobbys d'abord (on peut s'y asseoir), puis les plus actives.
+ */
+export function listPublicRooms(): PublicRoomSummary[] {
+  ensureMaintenance();
+  return [...store.rooms.values()]
+    .filter((room) => room.isPublic && room.players.some((player) => player.connections > 0 && !player.left))
+    .sort((a, b) => Number(b.phase === 'LOBBY') - Number(a.phase === 'LOBBY') || b.updatedAt - a.updatedAt)
+    .slice(0, MAX_LISTED_ROOMS)
+    .map((room) => ({
+      code: room.code,
+      hostName: findPlayer(room, room.hostId)?.name ?? '?',
+      phase: room.phase,
+      round: room.round,
+      players: seatedPlayers(room).length,
+      spectators: activePlayers(room).filter(isSpectator).length,
+    }));
 }
 
 export function peekRoom(code: string): PeekResponse {

@@ -91,6 +91,21 @@ function Settings({ view, act, themes }: LobbyProps) {
             : 'Chacun voit seulement son mot, pas son camp : plus dur de savoir si on est Civil ou Undercover.'}
         </p>
       </fieldset>
+
+      <fieldset className="uc-fieldset">
+        <legend>Visibilité</legend>
+        <Toggle
+          label="Partie publique"
+          checked={room.isPublic}
+          onChange={(value) => act({ type: 'visibility', public: value })}
+          states={['Privée', 'Publique']}
+        />
+        <p className="uc-hint">
+          {room.isPublic
+            ? 'Visible dans la liste des parties en cours, sur l’accueil du jeu : n’importe qui peut entrer.'
+            : 'Seuls ceux qui ont le code ou le lien peuvent entrer.'}
+        </p>
+      </fieldset>
     </div>
   );
 }
@@ -213,6 +228,10 @@ export function Lobby({ view, act, themes }: LobbyProps) {
               <div>
                 <dt>Rôle</dt>
                 <dd>{room.settings.revealRoles ? 'Mot + camp' : 'Mot seul'}</dd>
+              </div>
+              <div>
+                <dt>Visibilité</dt>
+                <dd>{room.isPublic ? 'Publique' : 'Privée'}</dd>
               </div>
             </dl>
           )}
