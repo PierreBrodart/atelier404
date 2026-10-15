@@ -5,7 +5,7 @@ import { useBrowserValue } from '@/lib/undercover/client';
 import { maxImpostors } from '@/lib/undercover/rules';
 import type { ThemeInfo } from '@/lib/undercover/types';
 import { Button } from '../ui/Button';
-import { PhaseHead, PlayerChip, Scoreboard, SpectatorList, Stepper, Toggle, type ScreenProps } from './parts';
+import { PhaseHead, PlayerChip, Scoreboard, SeatSwitch, SpectatorList, Stepper, Toggle, type ScreenProps } from './parts';
 
 interface LobbyProps extends ScreenProps {
   themes: ThemeInfo[];
@@ -161,23 +161,24 @@ export function Lobby({ view, act, themes }: LobbyProps) {
         </section>
 
         <section className="uc-card uc-card--players" aria-labelledby="uc-players-title" data-enter>
-          <h3 id="uc-players-title" className="uc-card__title">
-            Joueurs{' '}
-            <span className="uc-count" aria-label={`${players.length} joueurs sur ${room.limits.max}`}>
-              {players.length} / {room.limits.max}
-            </span>
-          </h3>
-          <ul className="uc-players">
-            {players.map((player, index) => (
-              <PlayerChip key={player.id} player={player} meId={me.playerId} index={index} score={room.round > 1} />
-            ))}
-          </ul>
-          {me.seat === 'player' && (
-            <div className="uc-card__row">
-              <button type="button" className="uc-link-button" onClick={() => act({ type: 'seat', play: false })}>
-                Passer spectateur
-              </button>
-            </div>
+          {/* Le choix jouer / regarder vit à côté de la liste qu'il modifie */}
+          <div className="uc-card__head">
+            <h3 id="uc-players-title" className="uc-card__title">
+              Joueurs{' '}
+              <span className="uc-count" aria-label={`${players.length} joueurs`}>
+                {players.length}
+              </span>
+            </h3>
+            <SeatSwitch view={view} act={act} />
+          </div>
+          {players.length > 0 ? (
+            <ul className="uc-players">
+              {players.map((player, index) => (
+                <PlayerChip key={player.id} player={player} meId={me.playerId} index={index} score={room.round > 1} />
+              ))}
+            </ul>
+          ) : (
+            <p className="uc-hint">Personne à la table pour l’instant.</p>
           )}
           {room.spectators.length > 0 && (
             <>

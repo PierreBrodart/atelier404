@@ -62,6 +62,16 @@ function publicRoom(room: Room): PublicRoom {
 
   const alivePresent = game ? game.alive.filter((id) => players.some((p) => p.id === id && !p.away && !p.left)) : [];
 
+  // Imposteurs encore à démasquer. Pendant l'écran d'élimination, l'éliminé compte encore : sa carte se
+  // retourne avec un temps de suspense, le compteur ne doit pas trahir son rôle avant elle.
+  let impostors: PublicRoom['impostors'] = null;
+  if (game && isPlaying(room.phase)) {
+    const stillIn = (id: string) => game.alive.includes(id) || (room.phase === 'ELIMINATION' && id === game.eliminationId);
+    const count = (role: Role) =>
+      Object.entries(game.assignments).filter(([id, assignment]) => assignment.role === role && stillIn(id)).length;
+    impostors = { undercover: count('UNDERCOVER'), mrWhite: count('MR_WHITE') };
+  }
+
   return {
     code: room.code,
     phase: room.phase,
@@ -73,7 +83,8 @@ function publicRoom(room: Room): PublicRoom {
     themeLabel: game ? game.themeLabel : null,
     players: publicPlayers,
     spectators,
-    limits: { min: LIMITS.minPlayers, max: LIMITS.maxPlayers, spectators: LIMITS.maxSpectators },
+    limits: { min: LIMITS.minPlayers },
+    impostors,
     composition: { ...comp },
     clueOrder: room.phase === 'CLUES' || room.phase === 'VOTING' ? [...(game?.clueOrder ?? [])] : [],
     currentSpeakerId: currentSpeaker(room),

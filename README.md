@@ -47,7 +47,7 @@ Détails, variables d'environnement (build vs runtime), et **pourquoi un seul r�
 
 ## Undercover
 
-Un mot secret, un imposteur, un vote. Jusqu'à 10 joueurs, chacun sur son téléphone.
+Un mot secret, des imposteurs, un vote. Dès 3 joueurs, sans limite, chacun sur son téléphone.
 Accessible depuis le site sur `/undercover`. Détails techniques (moteur de jeu, confidentialité, temps réel via SSE) : [TECHNICAL.md §9](./TECHNICAL.md#9-undercover-mini-jeu-multijoueur).
 
 ## Kahoot

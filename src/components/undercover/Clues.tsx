@@ -37,7 +37,7 @@ export function Clues({ view, act }: ScreenProps) {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!myTurn) return;
+    if (!myTurn || !text.trim()) return;
     act({ type: 'submitClue', text });
     setText('');
   };
@@ -49,10 +49,10 @@ export function Clues({ view, act }: ScreenProps) {
         title={allSpoke ? 'Tout le monde a parlé.' : myTurn ? 'À toi de jouer !' : `${speaker?.name ?? '…'} donne son indice.`}
       >
         {allSpoke ? (
-          <p>Discutez de vive voix tant que vous voulez : c’est au host de lancer le vote quand la table est prête.</p>
+          <p>Débattez autant que vous voulez : c’est au host de lancer le vote quand la table est prête.</p>
         ) : (
           <p>
-            Chacun son tour, donne un indice sur ton mot <strong>sans le dire</strong>. À l’oral ou par écrit : comme vous voulez.
+            Chacun son tour, écris un indice sur ton mot <strong>sans le dire</strong> : il s’affiche pour toute la table.
           </p>
         )}
       </PhaseHead>
@@ -72,7 +72,7 @@ export function Clues({ view, act }: ScreenProps) {
                 meId={me.playerId}
                 index={index}
                 order={index + 1}
-                detail={clue && (clue.skipped ? 'a passé son tour' : clue.text ? `« ${clue.text} »` : 'a donné son indice à l’oral')}
+                detail={clue && (clue.skipped ? 'a passé son tour' : `« ${clue.text} »`)}
               >
                 <StatusMark state={state} labels={{ done: 'a donné son indice', wait: 'n’a pas encore donné son indice', now: 'est en train de donner son indice' }} />
               </PlayerChip>
@@ -86,7 +86,7 @@ export function Clues({ view, act }: ScreenProps) {
         <form className={cx('uc-card', myTurn ? 'uc-card--turn' : 'uc-card--draft')} onSubmit={submit} data-enter>
           <div className="field">
             <label htmlFor="uc-clue">
-              {myTurn ? 'Ton indice (facultatif si tu le dis à voix haute)' : 'Prépare ton indice en attendant ton tour'}
+              {myTurn ? 'Ton indice' : 'Prépare ton indice en attendant ton tour'}
             </label>
             <input
               ref={inputRef}
@@ -104,8 +104,8 @@ export function Clues({ view, act }: ScreenProps) {
                 : 'Personne ne le voit avant que tu l’envoies, et tu pourras encore le modifier quand ce sera ton tour.'}
             </p>
           </div>
-          <Button type="submit" disabled={!myTurn} aria-describedby="uc-clue-hint">
-            {myTurn ? 'J’ai donné mon indice' : 'Envoi possible à ton tour'}
+          <Button type="submit" disabled={!myTurn || !text.trim()} aria-describedby="uc-clue-hint">
+            {myTurn ? 'Envoyer mon indice' : 'Envoi possible à ton tour'}
           </Button>
         </form>
       )}

@@ -38,7 +38,8 @@ export function parseAction(input: unknown): ClientAction | null {
       return { type: input.type };
 
     case 'submitClue': {
-      const clue = input.text === undefined ? '' : text(input.text, LIMITS.clueMax);
+      // Un texte vide passe la validation de forme : c'est le moteur qui le refuse, avec un message clair.
+      const clue = text(input.text, LIMITS.clueMax);
       return clue === null ? null : { type: 'submitClue', text: clue };
     }
 

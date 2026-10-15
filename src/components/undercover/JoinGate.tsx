@@ -42,7 +42,7 @@ export function JoinGate({ code, peek, join }: JoinGateProps) {
       <div className="uc__inner container">
         <div ref={ref} className="uc__stage uc__stage--narrow">
           <PhaseHead
-            kicker={`Room ${code}${peek ? ` · ${peek.playerCount} / ${peek.max} joueurs` : ''}`}
+            kicker={`Room ${code}${peek ? ` · ${peek.playerCount} joueur${peek.playerCount > 1 ? 's' : ''}` : ''}`}
             title={spectator ? 'Entrer en spectateur.' : 'Rejoindre la partie.'}
           >
             {joinable && !spectator && <p>Choisis ton prénom pour entrer dans la room.</p>}

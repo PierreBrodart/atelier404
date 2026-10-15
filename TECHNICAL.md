@@ -184,20 +184,27 @@ Toutes les transitions sont décidées **par le serveur** et diffusées à tous 
 quelqu'un est absent) — **sauf CLUES → VOTING**, volontairement manuelle : une fois le dernier indice donné, la
 partie reste en CLUES (discussion libre) jusqu'à ce que le host envoie l'action `startVote`.
 
-- **Composition** : au moins 3 joueurs (10 max) ; au moins 1 Undercover (nombre choisi par le host) + Mr White en
-  option ; au moins 2 civils ; civils strictement plus nombreux que les imposteurs (`maxImpostors` dans `rules.ts` :
-  1 imposteur à 3-4 joueurs, 2 à 5-6, 3 à 7-8, 4 à 9-10). Toute demande incohérente est corrigée par
+- **Composition** : au moins 3 joueurs, **aucun maximum** (ni de joueurs ni de spectateurs) ; au moins 1 Undercover
+  (nombre choisi par le host) + Mr White en option ; au moins 2 civils ; civils strictement plus nombreux que les
+  imposteurs (`maxImpostors` dans `rules.ts` : 1 imposteur à 3-4 joueurs, 2 à 5-6, 3 à 7-8, 4 à 9-10…). Toute demande incohérente est corrigée par
   `normalizeComposition` : le réglage modifié par le host est conservé, l'autre s'ajuste (si des joueurs partent, le
   nombre d'Undercover baisse avant que Mr White ne soit retiré).
 - **Spectateurs et file d'attente** : chaque personne a une place (`ServerPlayer.seat`) : `player` (assis à la
-  table), `queue` (spectateur en file d'attente) ou `watch` (spectateur qui regarde seulement). Une arrivée en
-  pleine partie, ou en lobby quand la table est pleine, entre en `queue` ; au retour au lobby (et dès qu'une place se
-  libère en lobby), `fillSeats` assied la file dans l'ordre d'arrivée. Action `seat` : un spectateur choisit de jouer
-  ou de regarder à tout moment ; un joueur ne peut passer spectateur qu'en lobby. 10 spectateurs maximum en plus
-  des joueurs. Un spectateur déconnecté plus de 30 s est retiré (il n'a aucune donnée de manche).
+  table), `queue` (spectateur qui jouera la prochaine manche) ou `watch` (spectateur qui regarde seulement). Une
+  arrivée en pleine partie entre en `queue` ; au retour au lobby, `fillSeats` assied toute la file. Action `seat` :
+  un spectateur choisit de jouer ou de regarder à tout moment ; un joueur ne peut passer spectateur qu'en lobby
+  (contrôle « Je joue / Je regarde » dans la carte Joueurs, ou dans le bandeau spectateur pendant une manche). Un
+  spectateur déconnecté plus de 30 s est retiré (il n'a aucune donnée de manche).
 - **Chat** : action `chat` (200 caractères, 5 messages / 5 s par personne, 80 derniers messages gardés par room).
   Pendant une manche, un éliminé ou un spectateur écrit « hors jeu » (`ChatMessage.ghost`) : seuls les éliminés et les
   spectateurs le lisent, car un éliminé connaît son mot ; tout redevient visible en fin de manche.
+- **Ordre de passage** : tiré au sort à chaque tour, mais **Mr White ne parle jamais en premier** (le premier est
+  tiré parmi les autres joueurs présents) : `drawClueOrder` dans `engine.ts`.
+- **Compteurs en direct** (barre du haut) : nombre de spectateurs, et pendant une manche nombre d'Undercover encore
+  à démasquer (+ Mr White s'il est en jeu) — `PublicRoom.impostors`, déductible des infos publiques ; pendant l'écran
+  d'élimination, l'éliminé compte encore, pour ne pas trahir son rôle avant le retournement de la carte.
+- **Indice écrit, obligatoirement** : un indice vide est refusé (`submitClue` dans `engine.ts`) ; il n'y a plus
+  d'indice « donné à l'oral ». Seul le host peut faire passer le tour d'un joueur (ou l'absence d'un joueur).
 - **Indice préparé à l'avance** : pendant le tour des autres, un joueur peut taper son indice ; le brouillon reste
   dans son navigateur (rien n'est envoyé) et il n'a plus qu'à le valider quand son tour arrive (`Clues.tsx`).
 - **Vote** : contre un joueur, ou « Passer » (`SKIP_VOTE` dans `rules.ts`) pour n'éliminer personne ce tour-ci —
@@ -242,7 +249,7 @@ partie reste en CLUES (discussion libre) jusqu'à ce que le host envoie l'action
 | Lobby, déconnecté > 30 s | retiré de la room |
 | Host déconnecté > 15 s, ou qui quitte | rôle de host transféré à un joueur connecté (à défaut, un spectateur) |
 | Joueur qui quitte en cours de partie | éliminé (rôle révélé), victoire vérifiée immédiatement |
-| Arrivée tardive, ou table pleine | spectateur en file d'attente, assis à la manche suivante (ou dès qu'une place se libère en lobby) |
+| Arrivée en pleine manche | spectateur, assis automatiquement à la manche suivante |
 | Spectateur déconnecté > 30 s | retiré de la room |
 | Room vide 10 min / âgée de 8 h | supprimée |
 
@@ -264,8 +271,8 @@ puis l'ajouter au tableau `themes` de `src/data/undercover/index.ts`. Le sélect
 
 ### Sécurité / robustesse
 
-Entrées validées (`parse.ts`), corps limité à 4 Ko, noms de 2 à 16 caractères, 10 joueurs + 10 spectateurs et 300
-rooms maximum, codes de room sans caractères ambigus, chat limité en débit par personne. Pas de limitation de débit
+Entrées validées (`parse.ts`), corps limité à 4 Ko, noms de 2 à 16 caractères, 300 rooms maximum (pas de maximum de
+joueurs par room), codes de room sans caractères ambigus, chat limité en débit par personne. Pas de limitation de débit
 par IP : à ajouter derrière un reverse proxy si le jeu est exposé publiquement.
 
 ---

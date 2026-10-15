@@ -276,6 +276,9 @@ async function main() {
   check(!lateSeen.includes(`"${civilianWord}"`) && !lateSeen.includes(`"${undercoverWord}"`), 'le spectateur ne voit aucun des deux mots');
   check(all.every((o) => !lateSeen.includes(o.token)), 'le spectateur ne voit aucun jeton');
 
+  check(alice.room.impostors?.undercover === 1 && alice.room.impostors?.mrWhite === 1, 'compteur : 1 Undercover + Mr White à démasquer');
+  check(late.room.impostors?.undercover === 1, 'le spectateur voit aussi le compteur');
+
   await playUntilVoting(all);
 
   const white = byRole(all, 'MR_WHITE')[0];
@@ -318,6 +321,7 @@ async function main() {
   await host.act({ type: 'next' });
   await toPhase(all, 'ELIMINATION');
   check(alice.room.elimination.role === 'MR_WHITE' && alice.room.elimination.awaitingGuess, 'rôle de l’éliminé révélé + dernière chance de Mr White');
+  check(alice.room.impostors?.mrWhite === 1, 'pendant l’élimination, le compteur ne trahit pas encore le rôle');
   check(alice.room.players.find((p) => p.id === white.playerId).role === 'MR_WHITE', 'le rôle de l’éliminé est public');
 
   const earlyNext = await host.act({ type: 'next' });
@@ -329,6 +333,7 @@ async function main() {
   await host.act({ type: 'next' });
   await toPhase(all, 'CLUES');
   check(alice.room.turn === 2, 'tour suivant');
+  check(alice.room.impostors?.undercover === 1 && alice.room.impostors?.mrWhite === 0, 'compteur mis à jour au tour suivant');
 
   // Chat pendant la manche : un éliminé (ou un spectateur) ne parle qu'aux éliminés et aux spectateurs
   const offside = await white.act({ type: 'chat', text: 'chuchotement hors jeu' });
@@ -351,7 +356,12 @@ async function main() {
   for (let guard = 0; guard < 6 && alice.room.phase === 'CLUES'; guard += 1) {
     const id = alice.room.currentSpeakerId;
     if (!id) break;
-    await survivors.find((c) => c.playerId === id).act({ type: 'submitClue', text: '' });
+    const speaker = survivors.find((c) => c.playerId === id);
+    if (guard === 0) {
+      const spoken = await speaker.act({ type: 'submitClue', text: '   ' });
+      check(!spoken.ok, 'un indice vide (« à l’oral ») est refusé : il doit être écrit');
+    }
+    await speaker.act({ type: 'submitClue', text: `tour 2, ${speaker.name}` });
     await waitFor(() => alice.room.currentSpeakerId !== id || alice.room.phase !== 'CLUES', 'orateur suivant');
   }
   // Le passage au vote est manuel : c'est le host qui le lance une fois tout le monde passé.
@@ -367,6 +377,7 @@ async function main() {
   await toPhase(all, 'GAME_OVER');
   check(alice.room.outcome.winner === 'CIVILS', 'victoire des civils');
   check(alice.room.reveal.civilianWord === civilianWord && alice.room.reveal.undercoverWord === undercoverWord, 'mots révélés en fin de manche');
+  check(alice.room.impostors === null, 'pas de compteur hors manche');
   check(all.every((c) => c.room.players.every((p) => p.role !== null)), 'tous les rôles révélés en fin de manche');
   const scores = Object.fromEntries(alice.room.players.map((p) => [p.name, p.score]));
   check(civilians.every((c) => scores[c.name] === 2) && scores[undercover.name] === 0 && scores[white.name] === 0, `scores manche 1 : ${JSON.stringify(scores)}`);
@@ -442,6 +453,7 @@ async function main() {
 
   await persistentTieScenario();
   await queueScenario();
+  await mrWhiteNeverFirstScenario();
   await scoringScenario();
 
   if (SLOW) await slowTests();
@@ -538,48 +550,72 @@ async function persistentTieScenario() {
 }
 
 async function queueScenario() {
-  section('File d’attente : table pleine, place libérée, spectateur volontaire');
-  const table = ['Ugo', 'Vera', 'Willy', 'Xena', 'Yann', 'Zoé', 'Abel', 'Basile', 'Cora', 'Dina'].map((n) => new Client(n));
+  section('Pas de limite de joueurs, spectateurs, file pour la manche suivante');
+  const names = ['Ugo', 'Vera', 'Willy', 'Xena', 'Yann', 'Zoé', 'Abel', 'Basile', 'Cora', 'Dina', 'Elio', 'Fiona'];
+  const table = names.map((n) => new Client(n));
   const [host, ...others] = table;
   await host.create();
   await host.connect();
   for (const p of others) {
-    await p.join(host.code);
+    const res = await p.join(host.code);
+    check(res.ok, `${p.name} rejoint (aucune limite de joueurs)`);
     await p.connect();
   }
-  await waitFor(() => everyone(table, (c) => c.room.players.length === 10), '10 joueurs');
-
-  const peek = await api({ type: 'peek', code: host.code });
-  check(peek.joinable && peek.spectator, 'table pleine : on peut encore entrer, en spectateur');
-  const extra = new Client('Émile');
-  const joined = await extra.join(host.code);
-  check(joined.ok, 'un 11e arrivant est accepté');
-  await extra.connect();
-  await waitFor(() => extra.view, 'vue du 11e');
-  check(extra.me.seat === 'queue' && extra.room.spectators[0]?.queuePosition === 1, 'le 11e est n°1 de la file d’attente');
-  check(extra.room.players.length === 10, 'la table reste à 10 joueurs');
-
-  const leaving = others[0];
-  await leaving.act({ type: 'leave' });
-  leaving.disconnect();
-  await waitFor(() => extra.me.seat === 'player', 'le premier de la file prend la place libérée');
-  check(host.room.players.length === 10 && host.room.spectators.length === 0, 'la file est vide, la table de nouveau pleine');
+  await waitFor(() => everyone(table, (c) => c.room.players.length === 12), '12 joueurs');
+  check(host.room.spectators.length === 0, '12 joueurs, tous assis à la table');
+  check(!('max' in host.room.limits) && !('max' in (await api({ type: 'peek', code: host.code }))), 'plus aucun maximum exposé');
 
   const watcher = others[1];
   await watcher.act({ type: 'seat', play: false });
-  await waitFor(() => host.room.players.length === 9 && watcher.me.seat === 'watch', 'un joueur passe spectateur en lobby');
-  await host.act({ type: 'updateSettings', settings: { undercoverCount: 9 } });
-  await waitFor(() => host.room.settings.undercoverCount === 4, 'nombre d’Undercover plafonné');
-  check(host.room.composition.civil === 5 && host.room.composition.valid, '9 joueurs : au plus 4 Undercover (5 civils)');
+  await waitFor(() => host.room.players.length === 11 && watcher.me.seat === 'watch', 'un joueur passe spectateur en lobby');
+  check(host.room.spectators.length === 1, 'compteur de spectateurs : 1');
+  await host.act({ type: 'updateSettings', settings: { undercoverCount: 99 } });
+  await waitFor(() => host.room.settings.undercoverCount === 5, 'nombre d’Undercover plafonné');
+  check(host.room.composition.civil === 6 && host.room.composition.valid, '11 joueurs : au plus 5 Undercover (6 civils)');
 
-  const present = [...table.filter((c) => c !== leaving), extra];
   await host.act({ type: 'startGame' });
-  await toPhase(present, 'REVEAL');
+  await toPhase(table, 'REVEAL');
   check(watcher.me.role === null && !host.room.players.some((p) => p.id === watcher.playerId), 'le spectateur volontaire ne reçoit pas de rôle');
-  check(present.filter((c) => c.me.role === 'UNDERCOVER').length === 4, '4 Undercover distribués');
-  const midGame = await extra.act({ type: 'seat', play: false });
+  check(table.filter((c) => c.me.role === 'UNDERCOVER').length === 5, '5 Undercover distribués');
+  check(host.room.impostors?.undercover === 5 && host.room.impostors?.mrWhite === 0, 'compteur : 5 Undercover à démasquer');
+
+  const peek = await api({ type: 'peek', code: host.code });
+  check(peek.joinable && peek.spectator, 'partie en cours : on entre en spectateur');
+  const extra = new Client('Émile');
+  check((await extra.join(host.code)).ok, 'un 13e arrivant est accepté');
+  await extra.connect();
+  await waitFor(() => extra.view, 'vue du 13e');
+  check(extra.me.seat === 'queue' && extra.me.role === null, 'il joue la prochaine manche, sans rôle d’ici là');
+  await waitFor(() => host.room.spectators.length === 2, 'compteur de spectateurs : 2');
+  const midGame = await others[0].act({ type: 'seat', play: false });
   check(!midGame.ok, 'un joueur ne peut pas passer spectateur en pleine manche');
-  for (const c of present) c.disconnect();
+  for (const c of [...table, extra]) c.disconnect();
+}
+
+/** Mr White ne donne jamais le premier indice (tirage répété sur plusieurs parties). */
+async function mrWhiteNeverFirstScenario() {
+  section('Ordre de passage : Mr White ne commence jamais');
+  let firsts = 0;
+  for (let game = 0; game < 12; game += 1) {
+    const five = ['Gus', 'Hana', 'Ivo', 'Jil', 'Kay'].map((n) => new Client(`${n}${game}`));
+    const [host, ...others] = five;
+    await host.create();
+    await host.connect();
+    for (const p of others) {
+      await p.join(host.code);
+      await p.connect();
+    }
+    await waitFor(() => everyone(five, (c) => c.room.players.length === 5), '5 joueurs');
+    await host.act({ type: 'updateSettings', settings: { undercoverCount: 1, mrWhiteCount: 1 } });
+    await host.act({ type: 'startGame' });
+    await toPhase(five, 'REVEAL');
+    for (const c of five) await c.act({ type: 'ready' });
+    await toPhase(five, 'CLUES');
+    const white = five.find((c) => c.me.role === 'MR_WHITE');
+    if (host.room.clueOrder[0] === white.playerId) firsts += 1;
+    for (const c of five) c.disconnect();
+  }
+  check(firsts === 0, `Mr White n’ouvre jamais le tour (12 tirages, ${firsts} fois en premier)`);
 }
 
 /** Crée une room avec ces joueurs (le premier est host), tous connectés. */

@@ -2,10 +2,8 @@ import type { GameSettings, Role } from './types';
 
 /** Constantes de règles et de robustesse (faciles à ajuster). */
 export const LIMITS = {
+  /** Aucun maximum de joueurs ni de spectateurs : seul le minimum pour lancer une partie existe. */
   minPlayers: 3,
-  maxPlayers: 10,
-  /** Spectateurs en plus des joueurs (file d'attente comprise) */
-  maxSpectators: 10,
   nameMin: 2,
   nameMax: 16,
   clueMax: 40,

@@ -46,7 +46,7 @@ export function Voting({ view, act }: ScreenProps) {
               return (
                 <li key={id}>
                   <strong>{player?.name}</strong>
-                  <span>{clue.skipped ? 'a passé son tour' : clue.text ? `« ${clue.text} »` : 'indice donné à l’oral'}</span>
+                  <span>{clue.skipped ? 'a passé son tour' : `« ${clue.text} »`}</span>
                 </li>
               );
             })}

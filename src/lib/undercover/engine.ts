@@ -138,31 +138,24 @@ export function normalizeSettings(room: Room, keep?: 'undercover' | 'mrWhite'): 
   };
 }
 
-/** En lobby, assied les premiers de la file d'attente tant qu'il reste des places à la table. */
+/** En lobby, toute la file d'attente prend place à la table (il n'y a pas de nombre maximum de joueurs). */
 function fillSeats(room: Room): void {
   if (room.phase !== 'LOBBY') return;
-  let free = LIMITS.maxPlayers - seatedPlayers(room).length;
   for (const player of queuedPlayers(room)) {
-    if (free <= 0) break;
     player.seat = 'player';
     player.queuedAt = null;
-    free -= 1;
   }
 }
 
 /**
- * Nouvelle arrivée : assise à la table en lobby s'il reste de la place, sinon spectatrice en file
- * d'attente (partie en cours ou table pleine) — elle jouera dès la prochaine manche qui a une place.
+ * Nouvelle arrivée : assise à la table en lobby, spectatrice en file d'attente si une manche est en
+ * cours — elle jouera dès la manche suivante. Aucune limite de joueurs ni de spectateurs.
  */
 export function addPlayer(room: Room, player: ServerPlayer): ActionResult {
-  const others = activePlayers(room);
-  const taken = others.some((other) => other.name.toLowerCase() === player.name.toLowerCase());
+  const taken = activePlayers(room).some((other) => other.name.toLowerCase() === player.name.toLowerCase());
   if (taken) return fail('Ce prénom est déjà pris dans la room.');
 
-  const seated = room.phase === 'LOBBY' && seatedPlayers(room).length < LIMITS.maxPlayers;
-  if (!seated && others.filter(isSpectator).length >= LIMITS.maxSpectators) {
-    return fail(`La room est pleine (${LIMITS.maxPlayers} joueurs et ${LIMITS.maxSpectators} spectateurs).`);
-  }
+  const seated = room.phase === 'LOBBY';
   player.seat = seated ? 'player' : 'queue';
   player.queuedAt = seated ? null : Date.now();
 
@@ -352,12 +345,27 @@ function newRound(room: Room, playerId: string): ActionResult {
 
 // ——— Phases de jeu —————————————————————————————————————————————
 
+/**
+ * Ordre de passage tiré au sort, avec une règle : Mr White n'ouvre jamais le tour (sans mot, il n'aurait
+ * aucun indice à écouter avant de parler). Le premier est tiré parmi les autres joueurs — de préférence
+ * présents, car un absent est passé automatiquement et Mr White se retrouverait alors à parler en premier.
+ */
+function drawClueOrder(room: Room, game: GameData): string[] {
+  const order = shuffle(game.alive);
+  const notWhite = order.filter((id) => game.assignments[id]?.role !== 'MR_WHITE');
+  const present = notWhite.filter((id) => !isAbsent(room, id));
+  const pool = present.length > 0 ? present : notWhite;
+  if (pool.length === 0) return order;
+  const first = pick(pool);
+  return [first, ...order.filter((id) => id !== first)];
+}
+
 function beginClues(room: Room) {
   const game = room.game;
   if (!game) return;
   game.clues = {};
   game.ready = [];
-  game.clueOrder = shuffle(game.alive);
+  game.clueOrder = drawClueOrder(room, game);
   touch(room, 'CLUES');
 }
 
@@ -636,6 +644,8 @@ export function applyAction(room: Room, playerId: string, action: ClientAction):
     case 'submitClue': {
       if (!game || room.phase !== 'CLUES') return fail('Ce n’est pas le moment des indices.');
       if (currentSpeaker(room) !== playerId) return fail('Ce n’est pas ton tour de donner un indice.');
+      // L'indice se donne par écrit, toujours : il apparaît ainsi pour tous, spectateurs compris.
+      if (!action.text) return fail('Écris ton indice avant de valider.');
       game.clues[playerId] = { text: action.text, skipped: false };
       touch(room);
       break;

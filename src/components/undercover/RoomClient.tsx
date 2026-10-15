@@ -14,6 +14,7 @@ import { GameOver, WINNER_TITLES } from './GameOver';
 import { JoinGate } from './JoinGate';
 import { Lobby } from './Lobby';
 import { RoleReveal } from './RoleReveal';
+import { SeatSwitch } from './parts';
 import { VoteResult } from './VoteResult';
 import { Voting } from './Voting';
 import { useEnter } from './useEnter';
@@ -83,29 +84,49 @@ function MyWord({ view }: { view: RoomView }) {
   );
 }
 
-/** Bandeau des spectateurs : où ils en sont dans la file, et le choix de jouer ou de regarder. */
+/**
+ * Bandeau des spectateurs pendant une manche : leur statut, et le choix de jouer la suivante.
+ * En lobby, ce choix est dans la carte « Joueurs » (à côté de la liste qu'il modifie).
+ */
 function SpectatorBar({ view, act }: { view: RoomView; act: (action: ClientAction) => Promise<void> }) {
   const { room, me } = view;
-  if (me.seat === 'player') return null;
-  const lobby = room.phase === 'LOBBY';
-  const position = room.spectators.find((spectator) => spectator.id === me.playerId)?.queuePosition ?? null;
-
-  let text = 'Mode spectateur : tu regardes la partie sans jouer.';
-  if (me.seat === 'queue') {
-    text = lobby
-      ? `La table est pleine : tu es n°${position ?? '?'} dans la file d’attente, tu joues dès qu’une place se libère.`
-      : `Tu suis cette manche en spectateur. File d’attente : n°${position ?? '?'}, tu joues dès la prochaine manche.`;
-  }
+  if (me.seat === 'player' || room.phase === 'LOBBY') return null;
 
   return (
-    <div className="uc-spectator" role="status">
-      <p>
-        <span className="uc-tag">Spectateur</span> {text}
+    <div className="uc-spectator">
+      <p role="status">
+        <strong>Tu es spectateur.</strong>{' '}
+        {me.seat === 'queue' ? 'Tu entres en jeu à la prochaine manche.' : 'Tu regardes sans jouer.'}
       </p>
-      <button type="button" className="uc-link-button" onClick={() => act({ type: 'seat', play: me.seat !== 'queue' })}>
-        {me.seat === 'queue' ? 'Juste regarder' : lobby ? 'Rejoindre la table' : 'Jouer la prochaine manche'}
-      </button>
+      <SeatSwitch view={view} act={act} />
     </div>
+  );
+}
+
+/** Compteurs en haut de l'écran : spectateurs, et imposteurs encore à démasquer pendant une manche. */
+function TopStats({ view }: { view: RoomView }) {
+  const { spectators, impostors } = view.room;
+  const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`;
+
+  return (
+    <ul className="uc-stats" aria-label="En direct">
+      <li className="uc-stat" title="Spectateurs">
+        <span aria-hidden="true">👀</span>
+        {plural(spectators.length, 'spectateur')}
+      </li>
+      {impostors && (
+        <li className="uc-stat uc-stat--hot" title="Imposteurs encore en jeu">
+          <span aria-hidden="true">🕵️</span>
+          {impostors.undercover} Undercover à démasquer
+        </li>
+      )}
+      {impostors && impostors.mrWhite > 0 && (
+        <li className="uc-stat uc-stat--white">
+          <span aria-hidden="true">👻</span>
+          Mr White en jeu
+        </li>
+      )}
+    </ul>
   );
 }
 
@@ -205,12 +226,15 @@ export function RoomClient({ code, themes }: { code: string; themes: ThemeInfo[]
             <span className="sr-only">Code de la room : </span>
             {room.code}
           </p>
-          {connection === 'reconnecting' && (
-            <p className="uc__status" role="status">
-              Connexion perdue… reconnexion
-            </p>
-          )}
-          <MyWord view={view} />
+          <div className="uc__live">
+            {connection === 'reconnecting' && (
+              <p className="uc__status" role="status">
+                Connexion perdue… reconnexion
+              </p>
+            )}
+            <TopStats view={view} />
+            <MyWord view={view} />
+          </div>
           <div className="uc__leave">
             {confirmLeave ? (
               <>

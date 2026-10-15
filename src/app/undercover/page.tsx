@@ -16,7 +16,7 @@ export default function UndercoverPage() {
     <div className="page" data-accent="pink">
       <PageIntro
         accent="pink"
-        label="Le jeu de l’atelier · 3 à 10 joueurs"
+        label="Le jeu de l’atelier · dès 3 joueurs"
         title="Undercover. Qui ment ?"
         intro="Un mot presque identique, un imposteur qui bluffe, un vote qui tourne mal. Crée une room, partage le code, jouez chacun sur votre téléphone."
       />

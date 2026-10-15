@@ -20,7 +20,7 @@ const ROLES = [
 
 const STEPS = [
   'Chacun reçoit un mot secret sur son téléphone (ou aucun, si vous êtes Mr White).',
-  'À tour de rôle, chacun donne un indice sur son mot, sans le dire.',
+  'À tour de rôle, chacun écrit un indice sur son mot, sans le dire.',
   'On débat, puis on vote : le joueur le plus voté est éliminé et son rôle est révélé.',
   'La manche continue jusqu’à la victoire d’un camp : tout le camp gagnant marque (moitié des points pour ses éliminés). Les points s’additionnent d’une manche à l’autre.',
 ];
@@ -51,9 +51,9 @@ export function Rules() {
         </ol>
 
         <p className="uc-rules__note" data-reveal="fade">
-          De 3 à 10 joueurs (les retardataires suivent en spectateurs et jouent la manche suivante) · les Civils gagnent en
-          éliminant tous les imposteurs · les imposteurs gagnent s’ils restent aussi nombreux que les Civils · Mr White gagne
-          aussi en devinant le mot.
+          Dès 3 joueurs, sans limite (les retardataires suivent en spectateurs et jouent la manche suivante) · Mr White ne
+          donne jamais le premier indice · les Civils gagnent en éliminant tous les imposteurs · les imposteurs gagnent s’ils
+          restent aussi nombreux que les Civils · Mr White gagne aussi en devinant le mot.
         </p>
       </div>
     </section>

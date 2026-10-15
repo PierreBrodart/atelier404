@@ -13,7 +13,7 @@ import {
   seatedPlayers,
   transferHost,
 } from './engine';
-import { LIMITS, TIMING } from './rules';
+import { TIMING } from './rules';
 import { toRoomView } from './view';
 import type { ActionResult, ClientAction, JoinResponse, PeekResponse, Room, RoomView, ServerPlayer } from './types';
 
@@ -130,24 +130,16 @@ export function peekRoom(code: string): PeekResponse {
       reason: 'Cette room n’existe pas (ou elle a expiré).',
       phase: null,
       playerCount: 0,
-      max: LIMITS.maxPlayers,
     };
   }
-  const count = seatedPlayers(room).length;
-  const spectators = activePlayers(room).filter(isSpectator).length;
-  const spectator = room.phase !== 'LOBBY' || count >= LIMITS.maxPlayers;
-  let reason: string | null = null;
-  if (spectator && spectators >= LIMITS.maxSpectators) reason = 'La room est pleine, spectateurs compris.';
-  else if (room.phase !== 'LOBBY') reason = 'La partie est en cours : tu la suis en spectateur et tu joues dès la prochaine manche.';
-  else if (spectator) reason = 'La table est pleine : tu entres en file d’attente, et tu joues dès qu’une place se libère.';
+  const spectator = room.phase !== 'LOBBY';
   return {
     exists: true,
-    joinable: !spectator || spectators < LIMITS.maxSpectators,
+    joinable: true,
     spectator,
-    reason,
+    reason: spectator ? 'La partie est en cours : tu la suis en spectateur et tu joues dès la prochaine manche.' : null,
     phase: room.phase,
-    playerCount: count,
-    max: LIMITS.maxPlayers,
+    playerCount: seatedPlayers(room).length,
   };
 }
 

@@ -130,13 +130,46 @@ export function SpectatorList({ spectators, meId }: { spectators: PublicSpectato
             spectator.isHost && <span key="host" className="uc-tag uc-tag--host">Host</span>,
             spectator.id === meId && <span key="me" className="uc-tag">Toi</span>,
             <span key="seat" className="uc-tag uc-tag--off">
-              {spectator.queuePosition ? `File n°${spectator.queuePosition}` : 'Spectateur'}
+              {spectator.queuePosition ? 'Joue la prochaine' : 'Regarde'}
             </span>,
             !spectator.connected && <span key="off" className="uc-tag uc-tag--off">Reconnexion…</span>,
           ]}
         />
       ))}
     </ul>
+  );
+}
+
+/**
+ * Jouer ou regarder : deux boutons côte à côte, celui de la place actuelle est enfoncé (`aria-pressed`).
+ * En lobby, chacun choisit ; en pleine manche, seul un spectateur choisit pour la manche suivante
+ * (un joueur assis a un rôle, il ne peut pas quitter la table).
+ */
+export function SeatSwitch({ view, act }: ScreenProps) {
+  const { room, me } = view;
+  const lobby = room.phase === 'LOBBY';
+  if (!lobby && me.seat === 'player') return null;
+  const playing = lobby ? me.seat === 'player' : me.seat === 'queue';
+  const options = [
+    { play: true, icon: '🎮', label: lobby ? 'Je joue' : 'Je joue la prochaine' },
+    { play: false, icon: '👀', label: lobby ? 'Je regarde' : 'Je regarde seulement' },
+  ];
+
+  return (
+    <div className="uc-seat" role="group" aria-label="Ma place dans la partie">
+      {options.map((option) => (
+        <button
+          key={option.label}
+          type="button"
+          className="uc-seat__option"
+          aria-pressed={option.play === playing}
+          onClick={() => option.play !== playing && act({ type: 'seat', play: option.play })}
+        >
+          <span aria-hidden="true">{option.icon}</span>
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -387,7 +420,7 @@ export function ClueHistory({ history, players }: { history: PastClue[]; players
               .map((entry, index) => (
                 <li key={`${entry.playerId}-${index}`}>
                   <strong>{nameOf(entry.playerId)}</strong>
-                  <span>{entry.skipped ? 'a passé son tour' : entry.text ? `« ${entry.text} »` : 'indice donné à l’oral'}</span>
+                  <span>{entry.skipped ? 'a passé son tour' : `« ${entry.text} »`}</span>
                 </li>
               ))}
           </ul>

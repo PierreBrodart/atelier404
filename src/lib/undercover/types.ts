@@ -272,7 +272,12 @@ export interface PublicRoom {
   players: PublicPlayer[];
   /** Spectateurs : file d'attente puis simples observateurs */
   spectators: PublicSpectator[];
-  limits: { min: number; max: number; spectators: number };
+  limits: { min: number };
+  /**
+   * Imposteurs encore en jeu (à démasquer) pendant une manche, null sinon. Déductible des infos
+   * publiques (composition + rôles des éliminés) : ce n'est pas un secret.
+   */
+  impostors: { undercover: number; mrWhite: number } | null;
   composition: { civil: number; undercover: number; mrWhite: number; valid: boolean };
   clueOrder: string[];
   currentSpeakerId: string | null;
@@ -340,5 +345,4 @@ export interface PeekResponse {
   reason: string | null;
   phase: GamePhase | null;
   playerCount: number;
-  max: number;
 }
